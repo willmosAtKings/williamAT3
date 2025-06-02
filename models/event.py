@@ -9,3 +9,4 @@ class Event(db.Model):
     genre = db.Column(db.String(50))  # e.g. 'sports', 'academic', etc.
     created_by = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
     is_public = db.Column(db.Boolean, default=True)  # True = visible to everyone
+
