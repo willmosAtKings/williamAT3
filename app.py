@@ -1,74 +1,88 @@
-from flask import Flask, render_template, request, redirect, url_for
+from flask import Flask, render_template, request, redirect, url_for, make_response, jsonify, session
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash #
-from flask import make_response #
-from auth.auth import AuthService
-
-
+import secrets
 
 
 db = SQLAlchemy()
+
 
 def create_app():
 
     app = Flask(__name__)
     app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///app.db" # creates an instance of my database - app.db (can be opened by sqllite)
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+    app.secret_key = 'insanely-secret-key'  # set a strong random secret key
     db.init_app(app)
 
     from models.user import User # creates pyc files for python to use, dw about them
-    from models.event import Event
+    from auth.auth import AuthService  # Import here to avoid circular import
+
     with app.app_context():
         db.create_all()
 
     @app.route('/')
     def index(): # route funtions are not accessed but this is fine
-        return render_template('register.html')
+        return render_template('login.html')    
 
-    @app.route('/login', methods = ['POST', 'GET'])
+    @app.route('/login', methods=['POST', 'GET'])
     def login():
-        if request.method == "POST":
-            username = request.form["username"]
-            password = request.form["password"]
-        if AuthService.login(username, password):
-            return redirect(url_for(""))
-        else:
-            return "Login failed", 401
-        
-        return render_template("login.html")
-    
-    @app.route('/logout')
-    def logout():
-        token = request.cookies.get('session_token')
-        user = User.query.filter_by(session_token=token).first()
-        if user:
-            user.session_token = None
-            db.session.commit()
-        response = make_response(redirect('/login'))
-        response.delete_cookie('session_token')
-        return response
+        # Get and validate CSRF token
+        csrf_token = request.headers.get('X-CSRF-Token')
+        if not csrf_token or csrf_token != session.get('csrf_token'):
+            return jsonify({'error': 'Invalid CSRF token'}), 403
 
+        # Get JSON data
+        data = request.get_json()
+        email = data.get('email')
+        password = data.get('password')
+
+        if not email or not password:
+            return jsonify({'error': 'Missing email or password'}), 400
+
+        user = AuthService.login_user(email, password)
+        if user:
+            # Set a secure session token as cookie
+            response = jsonify({'message': 'Login successful'})
+            response.set_cookie('session_token', user.session_token, httponly=True, secure=True, samesite='Strict')
+            session['user_id'] = user.id
+            session['user_role'] = user.role
+            return response
+        else:
+            return jsonify({'error': 'Invalid credentials'}), 401
+    
     @app.route('/register', methods=['POST', 'GET'])
     def register():
         if request.method == 'POST':
-            username = request.form.get('username')
-            email = request.form.get('email') # btw i REALLY love rocco... - rahul Shankarling II, son of Pramod Shankarling
-            password = request.form.get('password')
+            data = request.get_json()
+            email = data.get('email')
+            password = data.get('password')
 
-            if not username or not email or not password:
-                return "Missing fields", 400
+            if not email or not password:
+                return jsonify({'error': 'Missing fields'}), 400
 
-            if User.query.filter_by(username=username).first():
-                return "Username already exists", 409
+            if User.query.filter_by(email=email).first():
+                return jsonify({'error': 'Email already exists'}), 409
 
-            hashed_password = generate_password_hash(password)
-            new_user = User(username=username, email=email, password=hashed_password)
+            new_user = User(username=email, email=email, password=password, role="student")  # or role from frontend
             db.session.add(new_user)
             db.session.commit()
 
-            return redirect(url_for('login'))  # or wherever you want to send them
+            # Create secure session cookie here
+            response = jsonify({'message': 'User created successfully'})
+            response.set_cookie(
+                'session_token',
+                new_user.session_token,
+                httponly=True,
+                secure=True,
+                samesite='Strict',
+                max_age=7200
+            )
+        if request.method == 'GET':
+            csrf_token = secrets.token_hex(32)
+            session['csrf_token'] = csrf_token
+            return render_template('register.html', csrf_token=csrf_token)
 
-        return render_template('register.html')  # Your HTML form
 
 
     @app.route('/profile')
@@ -78,7 +92,30 @@ def create_app():
 
     @app.route('/events')
     def events():
+
         return render_template('events.html')
+    
+
+    @app.route('/event/<id>')
+    def event_id():
+
+        pass
+
+    @app.route('/notifications')
+    def notifs():
+        pass
+
+    @app.route('/chatbot')
+    def chatbot():
+        pass
+
+    @app.route('/students/<id>/calendar')
+    def student_id_cal():
+        pass
+
+    @app.route('/admin/users')
+    def admin_users():
+        pass
 
     return app
 
