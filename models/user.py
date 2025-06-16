@@ -1,9 +1,7 @@
 import secrets
 from datetime import datetime, timedelta
-from app import db
 from werkzeug.security import generate_password_hash, check_password_hash
-
-
+from app import db
 
 class User(db.Model):
     __tablename__ = 'users'
@@ -26,8 +24,6 @@ class User(db.Model):
         self.set_password(password)
         self.role = role
         self.regenerate_tokens()
-
-    from models.event import Event
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
