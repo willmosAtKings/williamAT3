@@ -1,3 +1,3 @@
-from app import db
+from extensions import db
 
 db.create_all()

@@ -2,9 +2,7 @@ from flask import Flask, render_template, request, redirect, url_for, make_respo
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash
 import secrets
-
-# Create db instance first
-db = SQLAlchemy()
+from extensions import db
 
 def create_app():
     app = Flask(__name__)
@@ -14,6 +12,12 @@ def create_app():
     
     # Initialize db with the app
     db.init_app(app)
+
+    # Create tables within app context
+    with app.app_context():
+        from models.event import Event
+        from models.user import User
+        db.create_all()
     
     # Register routes
     @app.route('/')
@@ -30,7 +34,7 @@ def create_app():
         # Get JSON data
         if request.is_json:
             data = request.get_json()
-            email = data.get('email')
+            email = data.get('email') #
             password = data.get('password')
         else:
             email = request.form.get('email')
@@ -103,14 +107,7 @@ def create_app():
     @app.route('/events')
     def events():
         return render_template('events.html')
-    
-    # Add other routes...
-    
-    # Create tables within app context
-    with app.app_context():
-        from models.event import Event
-        from models.user import User
-        db.create_all()
+
         
     return app
 

@@ -2,7 +2,7 @@ import re
 import html
 from flask import session, request
 from werkzeug.security import generate_password_hash
-from app import db
+from extensions import db
 from models.user import User
 
 class AuthService:
