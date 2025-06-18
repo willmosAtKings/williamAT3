@@ -30,7 +30,6 @@ document.getElementById('regBtn').addEventListener('click', function () {
         return response.json().then(function (responseData) {
             if (response.ok) {
                 alert('Login successful!');
-                window.location.href = '/login';
             } else {
                 console.error('Login failed:', responseData.error);
                 alert(responseData.error || 'Registration failed');

@@ -1,107 +1,201 @@
-/* Reset some defaults */
+/* Reset and base styles */
 * {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  height: 100%;
+  width: 100%;
+}
+
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: linear-gradient(135deg, #f5f7fa 0%, #e4edf5 100%);
+  color: #333;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  padding: 20px;
+}
+
+/* Auth container styles */
+.auth-container {
+  width: 100%;
+  max-width: 450px;
+  margin: 0 auto;
+}
+
+.auth-card {
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+  padding: 40px;
+  width: 100%;
+}
+
+.auth-header {
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+.calendar-icon {
+  font-size: 3rem;
+  color: #4f46e5;
+  margin-bottom: 15px;
+  display: block;
+  text-align: center;
+}
+
+.auth-header h1 {
+  color: #333;
+  font-size: 1.8rem;
+  font-weight: 700;
+  margin-bottom: 8px;
+  text-align: center;
+}
+
+.auth-subtitle {
+  color: #666;
+  font-size: 1rem;
+  text-align: center;
+}
+
+/* Form styles */
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  margin-bottom: 25px;
+  width: 100%;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.form-group label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  color: #555;
+  font-size: 0.95rem;
+}
+
+.form-group input,
+.form-group select {
+  width: 100%;
+  padding: 12px 16px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 10px;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+}
+
+.form-group input:focus,
+.form-group select:focus {
+  outline: none;
+  border-color: #4f46e5;
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+}
+
+.form-group select {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23555' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 16px center;
+  background-size: 16px;
+  padding-right: 40px;
+}
+
+/* Button styles */
+.btn-primary {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  padding: 14px;
+  background: #4f46e5;
+  color: white;
+  font-weight: 600;
+  font-size: 1rem;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.2);
+  width: 100%;
+}
+
+.btn-primary:hover {
+  background: #4338ca;
+  box-shadow: 0 6px 16px rgba(67, 56, 202, 0.3);
+  transform: translateY(-1px);
+}
+
+.btn-primary:active {
+  transform: translateY(0);
+}
+
+/* Footer styles */
+.auth-footer {
+  text-align: center;
+  color: #666;
+  font-size: 0.95rem;
+  width: 100%;
+}
+
+.auth-link {
+  color: #4f46e5;
+  text-decoration: none;
+  font-weight: 600;
+  transition: color 0.3s ease;
+}
+
+.auth-link:hover {
+  color: #4338ca;
+  text-decoration: underline;
+}
+
+/* Responsive adjustments */
+@media (max-width: 480px) {
+  .auth-card {
+    padding: 30px 20px;
   }
   
-  body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background: #f5f7fa;
-    color: #333;
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
+  .calendar-icon {
+    font-size: 2.5rem;
   }
   
-  main {
-    flex-grow: 1;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    padding: 2rem;
+  .auth-header h1 {
+    font-size: 1.5rem;
   }
-  
-  /* Form card styling */
-  .form-card {
-    background: #fff;
-    padding: 2.5rem 2rem;
-    max-width: 400px;
-    width: 100%;
-    border-radius: 12px;
-    box-shadow: 0 8px 20px rgba(0,0,0,0.1);
-    display: flex;
-    flex-direction: column;
-    gap: 1.25rem;
-  }
-  
-  /* Form inputs */
-  .form-card label {
-    font-weight: 600;
-    margin-bottom: 0.3rem;
-    display: inline-block;
-    color: #555;
-    font-size: 0.95rem;
-  }
-  
-  .form-card input[type="email"],
-  .form-card input[type="password"] {
-    padding: 0.7rem 1rem;
-    border: 1.8px solid #ddd;
-    border-radius: 8px;
-    font-size: 1rem;
-    transition: border-color 0.3s ease;
-  }
-  
-  .form-card input[type="email"]:focus,
-  .form-card input[type="password"]:focus {
-    outline: none;
-    border-color: #4f46e5; /* Indigo-600 */
-    box-shadow: 0 0 8px rgba(79,70,229,0.3);
-  }
-  
-  /* Heading */
-  main h1 {
-    text-align: center;
-    margin-bottom: 2rem;
-    font-size: 1.8rem;
-    font-weight: 700;
-    color: #4f46e5;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 0.5rem;
-  }
-  
-  /* Button */
-  .btn-primary {
-    padding: 0.9rem 0;
-    background: #4f46e5;
-    color: white;
-    font-weight: 700;
-    font-size: 1.1rem;
-    border: none;
-    border-radius: 10px;
-    cursor: pointer;
-    transition: background-color 0.3s ease, box-shadow 0.3s ease;
-    box-shadow: 0 5px 15px rgba(79,70,229,0.3);
-  }
-  
-  .btn-primary:hover,
-  .btn-primary:focus {
-    background-color: #4338ca;
-    box-shadow: 0 8px 24px rgba(67,56,202,0.5);
-    outline: none;
-  }
-  
-  /* Responsive tweaks */
-  @media (max-width: 480px) {
-    .form-card {
-      padding: 2rem 1.5rem;
-    }
-  
-    main h1 {
-      font-size: 1.5rem;
-    }
-  }
+}
+
+/* Keep existing styles below */
+main {
+  flex-grow: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 2rem;
+}
+
+.form-card {
+  background: #fff;
+  padding: 2.5rem 2rem;
+  max-width: 400px;
+  width: 100%;
+  border-radius: 12px;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
   

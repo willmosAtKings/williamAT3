@@ -22,7 +22,12 @@ def create_app():
     # Register routes
     @app.route('/')
     def index():
-        return render_template('login.html')    
+        return render_template('login.html')
+
+
+    @app.route('/dashboard')
+    def index():
+        return render_template('dashboard.html')       
 
     @app.route('/login', methods=['POST', 'GET'])
     def login():
@@ -49,7 +54,7 @@ def create_app():
             db.session.commit()
             
             # Set a secure session token as cookie
-            response = jsonify({'message': 'Login successful'})
+            return redirect(url_for('dashboard.html'))
             response.set_cookie('session_token', user.session_token, httponly=True, secure=True, samesite='Strict')
             session['user_id'] = user.id
             session['user_role'] = user.role
