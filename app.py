@@ -10,7 +10,7 @@ def create_app():
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
     app.secret_key = 'insanely-secret-key'
     
-    # Initialize db with the app
+    # Initialise db with the app
     db.init_app(app)
 
     # Create tables within app context
@@ -18,6 +18,16 @@ def create_app():
         from models.event import Event
         from models.user import User
         db.create_all()
+
+    # Injects csrf tokens into all templates (html files)
+    @app.context_processor
+    def inject_csrf_token():
+        csrf_token = session.get('csrf_token')
+        if not csrf_token:
+            csrf_token = secrets.token_hex(32)
+            session['csrf_token'] = csrf_token
+        return dict(csrf_token=csrf_token)
+
     
     # Register routes
     @app.route('/')
@@ -47,6 +57,14 @@ def create_app():
 
         if not email or not password:
             return jsonify({'error': 'Missing email or password'}), 400
+
+        # CSRF
+        csrf_token = request.form.get('csrf_token')
+        if not csrf_token or csrf_token != session.get('csrf_token'):
+            return "Invalid CSRF token", 403
+
+
+        
 
         user = User.query.filter_by(email=email).first()
         if user and user.check_password(password):
@@ -104,6 +122,11 @@ def create_app():
             max_age=7200
         )
         return response
+
+        csrf_token = request.form.get('csrf_token') # CSRF
+        if not csrf_token or csrf_token != session.get('csrf_token'):
+            return "Invalid CSRF token", 403
+
 
     @app.route('/profile')
     def profile():
