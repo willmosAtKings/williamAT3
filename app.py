@@ -26,7 +26,7 @@ def create_app():
 
 
     @app.route('/dashboard')
-    def index():
+    def dashboard():
         return render_template('dashboard.html')       
 
     @app.route('/login', methods=['POST', 'GET'])
@@ -54,7 +54,7 @@ def create_app():
             db.session.commit()
             
             # Set a secure session token as cookie
-            return redirect(url_for('dashboard.html'))
+            return redirect(url_for('dashboard'))
             response.set_cookie('session_token', user.session_token, httponly=True, secure=True, samesite='Strict')
             session['user_id'] = user.id
             session['user_role'] = user.role
