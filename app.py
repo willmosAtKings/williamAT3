@@ -63,22 +63,28 @@ def create_app():
         if not csrf_token or csrf_token != session.get('csrf_token'):
             return "Invalid CSRF token", 403
 
-
-        
-
         user = User.query.filter_by(email=email).first()
         if user and user.check_password(password):
             user.regenerate_tokens()
             db.session.commit()
-            
-            # Set a secure session token as cookie
-            return redirect(url_for('dashboard'))
-            response.set_cookie('session_token', user.session_token, httponly=True, secure=True, samesite='Strict')
+
+            # Create a response object first
+            response = make_response(redirect(url_for('dashboard')))
+
+            # Set secure session cookie and Flask session data
+            response.set_cookie(
+                'session_token',
+                user.session_token,
+                httponly=True,
+                secure=True,
+                samesite='Strict',
+                max_age=2 * 60 * 60  # 2 hours
+            )
+
             session['user_id'] = user.id
             session['user_role'] = user.role
+
             return response
-        else:
-            return jsonify({'error': 'Invalid credentials'}), 401
     
     @app.route('/register', methods=['POST', 'GET'])
     def register():
