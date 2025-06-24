@@ -86,6 +86,13 @@ def create_app():
 
             return response
     
+    @app.route('/logout', methods=['POST', 'GET'])
+    def logout():
+        response = make_response(redirect(url_for('login')))
+        response.set_cookie('session_token', '', expires=0)
+        session.clear()
+            return response
+
     @app.route('/register', methods=['POST', 'GET'])
     def register():
         from models.user import User  # Import here to avoid circular imports
@@ -132,7 +139,6 @@ def create_app():
         csrf_token = request.form.get('csrf_token') # CSRF
         if not csrf_token or csrf_token != session.get('csrf_token'):
             return "Invalid CSRF token", 403
-
 
     @app.route('/profile')
     def profile():
