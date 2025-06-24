@@ -5,6 +5,7 @@
   <title>Dashboard</title>
   <link rel="stylesheet" href="/static/css/dashboard.css" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link>
 </head>
 <body>
   <div class="sidebar">
@@ -42,7 +43,7 @@
         <div class="day-header">Fri</div>
         <div class="day-header">Sat</div>
 
-        <!-- placeholder cells 4now -->
+        <!-- placeholder cells for now -->
         {% for i in range(1, 32) %}
           <div class="day-cell">
             <div class="day-number">{{ i }}</div>
@@ -51,5 +52,12 @@
       </div>
     </div>
   </div>
+
+  <form action="/logout" method="POST" class="placeholder">
+    <button id="logout">Logout</button>
+
+  </form>
+
+  <script src="/static/js/dashboard.js"></script>
 </body>
 </html>

@@ -1,6 +1,6 @@
 
 
-document.getElementById('regBtn').addEventListener('click', function () {
+document.getElementById('LgnBtn').addEventListener('click', function () {
     const password = document.getElementById('password').value.trim();
     const email = document.getElementById('email').value.trim();
 

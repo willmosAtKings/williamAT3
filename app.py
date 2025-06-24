@@ -29,11 +29,10 @@ def create_app():
         return dict(csrf_token=csrf_token)
 
     
-    # Register routes
+    # base
     @app.route('/')
     def index():
         return render_template('login.html')
-
 
     @app.route('/dashboard')
     def dashboard():
@@ -59,9 +58,11 @@ def create_app():
             return jsonify({'error': 'Missing email or password'}), 400
 
         # CSRF
-        csrf_token = request.form.get('csrf_token')
-        if not csrf_token or csrf_token != session.get('csrf_token'):
-            return "Invalid CSRF token", 403
+        if not request.is_json:
+            csrf_token = request.form.get('csrf_token')
+            if not csrf_token or csrf_token != session.get('csrf_token'):
+                return "Invalid CSRF token", 403
+
 
         user = User.query.filter_by(email=email).first()
         if user and user.check_password(password):
@@ -76,7 +77,7 @@ def create_app():
                 'session_token',
                 user.session_token,
                 httponly=True,
-                secure=True,
+                secure=False, # set to false ONLY for testing because local servers do not return cookies (i think)
                 samesite='Strict',
                 max_age=2 * 60 * 60  # 2 hours
             )
@@ -91,7 +92,8 @@ def create_app():
         response = make_response(redirect(url_for('login')))
         response.set_cookie('session_token', '', expires=0)
         session.clear()
-            return response
+        return response
+
 
     @app.route('/register', methods=['POST', 'GET'])
     def register():
@@ -147,10 +149,9 @@ def create_app():
     @app.route('/events')
     def events():
         return render_template('events.html')
-
-        
+   
     return app
 
 if __name__ == "__main__": 
     app = create_app() 
-    app.run(debug=True)
+    app.run(host='127.0.0.1', port=5000, debug=True)
