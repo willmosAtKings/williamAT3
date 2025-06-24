@@ -146,9 +146,52 @@ def create_app():
     def profile():
         return render_template('profile.html')
 
-    @app.route('/events')
-    def events():
-        return render_template('events.html')
+    @app.route('/event/create', methods=['GET', 'POST'])
+    def create_event():
+        # Only allow teachers or admins to create events
+        if session.get('user_role') not in ['teacher', 'admin']:
+            return "Unauthorized", 403
+
+        if request.method == 'GET':
+            return render_template('create_event.html')
+
+        # Handle POST request
+        title = request.form.get('title')
+        description = request.form.get('description')
+        priority = request.form.get('priority')
+        genre = request.form.get('genre')
+        tags = request.form.get('tags')
+        is_public = request.form.get('is_public') == 'on'
+
+        start_time = request.form.get('start_time')
+        end_time = request.form.get('end_time')
+
+        # Convert datetime strings
+        try:
+            start_dt = datetime.strptime(start_time, "%Y-%m-%dT%H:%M")
+            end_dt = datetime.strptime(end_time, "%Y-%m-%dT%H:%M")
+        except ValueError:
+            flash("Invalid date format.")
+            return redirect(url_for('create_event'))
+
+        # Create and save event
+        event = Event(
+            title=title,
+            description=description,
+            priority=int(priority),
+            genre=genre,
+            tags=tags,
+            is_public=is_public,
+            start_time=start_dt,
+            end_time=end_dt,
+            creator_id=session['user_id']
+        )
+
+        db.session.add(event)
+        db.session.commit()
+
+        return redirect(url_for('dashboard'))
+
    
     return app
 
