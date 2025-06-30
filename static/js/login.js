@@ -1,3 +1,4 @@
+console.log("Login.js is loaded");
 
 
 document.getElementById('LgnBtn').addEventListener('click', function () {
@@ -14,7 +15,8 @@ document.getElementById('LgnBtn').addEventListener('click', function () {
         email: email
     };
 
-    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+    const csrfToken = document.querySelector('input[name="csrf_token"]')?.value || '';
+
 
     fetch('/login', {
         method: 'POST',
@@ -30,16 +32,19 @@ document.getElementById('LgnBtn').addEventListener('click', function () {
         return response.json().then(function (responseData) {
             if (response.ok) {
                 alert('Login successful!');
+                window.location.href = '/dashboard';
             } else {
                 console.error('Login failed:', responseData.error);
-                alert(responseData.error || 'Registration failed');
+                alert(responseData.error || 'Login failed');
+
             }
         });
     })
     .catch(function (error) {
-        console.error('Error:', error);
-        alert('An error occurred during Login');
+        console.error('Error:', error); // delete later
+        alert('An error occurred during login');
     });
+    
 });
 
 

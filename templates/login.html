@@ -16,7 +16,7 @@
         <p class="auth-subtitle">Sign in to your account</p>
       </div>
       
-      <form action="/login" method="POST" class="auth-form">
+      <form class="auth-form">
 
         <input type="hidden" name="csrf_token" value="{{ csrf_token }}"> <!-- CSRF token passed thru POST method--> 
 
@@ -30,7 +30,7 @@
           <input type="password" id="password" name="password" required placeholder="••••••••">
         </div>
         
-        <button type="submit" id = "LgnBtn" class="btn-primary">
+        <button type="button" id = "LgnBtn" class="btn-primary">
           <i class="fas fa-sign-in-alt"></i> Login
         </button>
       </form>

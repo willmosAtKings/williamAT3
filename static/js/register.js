@@ -1,6 +1,7 @@
 document.getElementById('regBtn').addEventListener('click', function () {
     const password = document.getElementById('password').value.trim();
     const email = document.getElementById('email').value.trim();
+    const role = document.getElementById('role').value;
 
     if (!password || !email) {
         alert('Please fill in all fields');
@@ -9,7 +10,8 @@ document.getElementById('regBtn').addEventListener('click', function () {
 
     const data = {
         password: password,
-        email: email
+        email: email,
+        role: role
     };
 
     const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
