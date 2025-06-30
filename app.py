@@ -20,14 +20,14 @@ def create_app():
         from models.user import User
         db.create_all()
 
-    # Injects csrf tokens into all templates (html files)
-    @app.context_processor
-    def inject_csrf_token():
-        csrf_token = session.get('csrf_token')
-        if not csrf_token:
-            csrf_token = secrets.token_hex(32)
-            session['csrf_token'] = csrf_token
-        return dict(csrf_token=csrf_token)
+    # Injects csrf tokens into all templates (html files) commented out for now
+    # @app.context_processor
+    # def inject_csrf_token():
+    #     csrf_token = session.get('csrf_token')
+    #     if not csrf_token:
+    #         csrf_token = secrets.token_hex(32)
+    #         session['csrf_token'] = csrf_token
+    #     return dict(csrf_token=csrf_token)
 
     
     # base
@@ -59,10 +59,10 @@ def create_app():
             return jsonify({'error': 'Missing email or password'}), 400
 
         # CSRF
-        if not request.is_json:
-            csrf_token = request.form.get('csrf_token')
-            if not csrf_token or csrf_token != session.get('csrf_token'):
-                return "Invalid CSRF token", 403
+        # if not request.is_json:
+        #     csrf_token = request.form.get('csrf_token')
+        #     if not csrf_token or csrf_token != session.get('csrf_token'):
+        #         return "Invalid CSRF token", 403
 
 
         user = User.query.filter_by(email=email).first()
@@ -107,9 +107,9 @@ def create_app():
         from models.user import User
 
         if request.method == 'GET':
-            csrf_token = secrets.token_hex(32)
-            session['csrf_token'] = csrf_token
-            return render_template('register.html', csrf_token=csrf_token)
+            # csrf_token = secrets.token_hex(32)
+            # session['csrf_token'] = csrf_token
+            return render_template('register.html') #csrf_token=csrf_token)
 
         # Handle POST
         if request.is_json:
@@ -126,9 +126,9 @@ def create_app():
 
 
 
-            csrf_token = request.form.get('csrf_token')
-            if not csrf_token or csrf_token != session.get('csrf_token'):
-                return "Invalid CSRF token", 403
+            # csrf_token = request.form.get('csrf_token')
+            # if not csrf_token or csrf_token != session.get('csrf_token'):
+            #     return "Invalid CSRF token", 403
 
         # Validate input
         if not email or not password or not role:
@@ -166,23 +166,27 @@ def create_app():
 
     @app.route('/event/create', methods=['GET', 'POST'])
     def create_event():
-        # Only allow teachers to access
+        # Only teachers can create events
         if session.get('user_role') != 'teacher':
             return jsonify({'error': 'Unauthorized'}), 403
 
-        # GET request: serve form page
         if request.method == 'GET':
-            return render_template('create_event.html')
+            return render_template('create_event.html')  # your form page
 
-        # POST request: expects JSON data
+        # POST expects JSON
         if not request.is_json:
             return jsonify({'error': 'Content-Type must be application/json'}), 415
+
+        # Check CSRF token in headers
+        # csrf_token = request.headers.get('X-CSRF-Token')
+        # if not csrf_token or csrf_token != session.get('csrf_token'):
+        #     return jsonify({'error': 'Invalid CSRF token'}), 403
 
         data = request.get_json()
 
         # Validate required fields
-        required_fields = ['title', 'start_time', 'end_time']
-        if not all(field in data and data[field] for field in required_fields):
+        required = ['title', 'start_time', 'end_time']
+        if not all(data.get(f) for f in required):
             return jsonify({'error': 'Missing required fields'}), 400
 
         try:
@@ -191,7 +195,6 @@ def create_app():
         except Exception:
             return jsonify({'error': 'Invalid date format. Use YYYY-MM-DDTHH:MM'}), 400
 
-        # Create Event object
         event = Event(
             title=data['title'],
             description=data.get('description', ''),
@@ -209,8 +212,8 @@ def create_app():
 
         return jsonify({'message': 'Event created successfully', 'event_id': event.id}), 200
 
-   
     return app
+
 
 if __name__ == "__main__": 
     app = create_app() 

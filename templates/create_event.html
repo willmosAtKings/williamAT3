@@ -1,32 +1,45 @@
-<form action="/event/create" method="POST">
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Create Event</title>
+</head>
+<body>
+  <form id="eventForm">
+    <!-- <input type="hidden" id="csrf_token" value="{{ csrf_token }}"> -->
+
     <label>Title:</label>
-    <input type="text" name="title" required><br>
-  
+    <input type="text" id="title" name="title" required><br>
+
     <label>Description:</label>
-    <textarea name="description"></textarea><br>
-  
+    <textarea id="description" name="description"></textarea><br>
+
     <label>Priority:</label>
-    <select name="priority">
+    <select id="priority" name="priority">
       <option value="0">Low</option>
       <option value="1">Medium</option>
       <option value="2">High</option>
     </select><br>
-  
+
     <label>Genre:</label>
-    <input type="text" name="genre" placeholder="e.g., Academic, Sports"><br>
-  
+    <input type="text" id="genre" name="genre" placeholder="e.g., Academic, Sports"><br>
+<!-- 
     <label>Tags (comma-separated):</label>
-    <input type="text" name="tags"><br>
-  
+    <input type="text" id="tags" name="tags"><br> -->
+
     <label>Start Time:</label>
-    <input type="datetime-local" name="start_time" required><br>
-  
+    <input type="datetime-local" id="start_time" name="start_time" required><br>
+
     <label>End Time:</label>
-    <input type="datetime-local" name="end_time" required><br>
-  
+    <input type="datetime-local" id="end_time" name="end_time" required><br>
+
     <label>Public Event:</label>
-    <input type="checkbox" name="is_public" checked><br>
-  
+    <input type="checkbox" id="is_public" name="is_public" checked><br>
+
     <button type="submit">Create Event</button>
   </form>
-  
+
+  <script src="/static/js/create_event.js"></script>
+
+</body>
+</html>

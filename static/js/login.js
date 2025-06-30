@@ -15,14 +15,14 @@ document.getElementById('LgnBtn').addEventListener('click', function () {
         email: email
     };
 
-    const csrfToken = document.querySelector('input[name="csrf_token"]')?.value || '';
+    //const csrfToken = document.querySelector('input[name="csrf_token"]')?.value || '';
 
 
     fetch('/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-CSRF-Token': csrfToken
+          //'X-CSRF-Token': csrfToken
         },
         body: JSON.stringify({ email, password }),
         credentials: 'same-origin'

@@ -20,7 +20,7 @@ document.getElementById('create-button').addEventListener('submit', async functi
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'X-CSRF-Token': '{{ csrf_token }}'  // Optional if you are using CSRF
+        // 'X-CSRF-Token': '{{ csrf_token }}'
       },
       body: JSON.stringify(data),
     });

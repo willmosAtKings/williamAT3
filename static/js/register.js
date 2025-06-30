@@ -14,14 +14,14 @@ document.getElementById('regBtn').addEventListener('click', function () {
         role: role
     };
 
-    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+    //const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 
     fetch('/register', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
             'Accept': 'application/json',
-            'X-CSRF-Token': csrfToken
+            //'X-CSRF-Token': csrfToken
         },
         body: JSON.stringify(data),
         credentials: 'same-origin'
