@@ -19,7 +19,7 @@ document.getElementById('regBtn').addEventListener('click', function () {
         headers: {
             'Content-Type': 'application/json',
             'Accept': 'application/json',
-            'X-CSRF-Token': csrfToken // ????
+            'X-CSRF-Token': csrfToken
         },
         body: JSON.stringify(data),
         credentials: 'same-origin'

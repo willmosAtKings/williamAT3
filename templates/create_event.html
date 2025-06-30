@@ -1,0 +1,32 @@
+<form action="/event/create" method="POST">
+    <label>Title:</label>
+    <input type="text" name="title" required><br>
+  
+    <label>Description:</label>
+    <textarea name="description"></textarea><br>
+  
+    <label>Priority:</label>
+    <select name="priority">
+      <option value="0">Low</option>
+      <option value="1">Medium</option>
+      <option value="2">High</option>
+    </select><br>
+  
+    <label>Genre:</label>
+    <input type="text" name="genre" placeholder="e.g., Academic, Sports"><br>
+  
+    <label>Tags (comma-separated):</label>
+    <input type="text" name="tags"><br>
+  
+    <label>Start Time:</label>
+    <input type="datetime-local" name="start_time" required><br>
+  
+    <label>End Time:</label>
+    <input type="datetime-local" name="end_time" required><br>
+  
+    <label>Public Event:</label>
+    <input type="checkbox" name="is_public" checked><br>
+  
+    <button type="submit">Create Event</button>
+  </form>
+  

@@ -84,8 +84,11 @@ def create_app():
 
             session['user_id'] = user.id
             session['user_role'] = user.role
-
             return response
+        else:
+            return jsonify({'error': 'Invalid email or password'}), 401 # make it look nicer rather tahn nust json resposne
+
+            
     
     @app.route('/logout', methods=['POST', 'GET'])
     def logout():
@@ -97,23 +100,28 @@ def create_app():
 
     @app.route('/register', methods=['POST', 'GET'])
     def register():
-        from models.user import User  # Import here to avoid circular imports
+        from models.user import User
         
         if request.method == 'GET':
             csrf_token = secrets.token_hex(32)
             session['csrf_token'] = csrf_token
             return render_template('register.html', csrf_token=csrf_token)
-            
-        # Handle POST request
+        
+        # Handle POST
         if request.is_json:
             data = request.get_json()
             email = data.get('email')
             password = data.get('password')
-            username = data.get('username', email)  # Use email as username if not provided
+            username = data.get('username', email)
         else:
             email = request.form.get('email')
             password = request.form.get('password')
             username = request.form.get('username', email)
+
+            # CSRF VALIDATION (for form requests)
+            csrf_token = request.form.get('csrf_token')
+            if not csrf_token or csrf_token != session.get('csrf_token'):
+                return "Invalid CSRF token", 403
 
         if not email or not password:
             return jsonify({'error': 'Missing fields'}), 400
@@ -121,26 +129,22 @@ def create_app():
         if User.query.filter_by(email=email).first():
             return jsonify({'error': 'Email already exists'}), 409
 
-        # Create new user
         new_user = User(username=username, email=email, password=password, role="student")
         db.session.add(new_user)
         db.session.commit()
 
-        # Create secure session cookie
+        # Return response
         response = jsonify({'message': 'User created successfully'})
         response.set_cookie(
             'session_token',
             new_user.session_token,
             httponly=True,
-            secure=True,
+            secure=False,  # or True in production
             samesite='Strict',
             max_age=7200
         )
         return response
 
-        csrf_token = request.form.get('csrf_token') # CSRF
-        if not csrf_token or csrf_token != session.get('csrf_token'):
-            return "Invalid CSRF token", 403
 
     @app.route('/profile')
     def profile():
@@ -150,10 +154,12 @@ def create_app():
     def create_event():
         # Only allow teachers or admins to create events
         if session.get('user_role') not in ['teacher', 'admin']:
-            return "Unauthorized", 403
+            return jsonify({"error":"Unauthorised" }), 403
 
         if request.method == 'GET':
             return render_template('create_event.html')
+
+        data = request.get_json()
 
         # Handle POST request
         title = request.form.get('title')
@@ -190,7 +196,7 @@ def create_app():
         db.session.add(event)
         db.session.commit()
 
-        return redirect(url_for('dashboard'))
+        return jsonify({'message': 'Event created successfully', 'event_id': event.id})
 
    
     return app
