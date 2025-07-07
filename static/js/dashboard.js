@@ -106,3 +106,13 @@ function formatTime(timeString) {
 document.addEventListener('DOMContentLoaded', function() {
   loadEvents();
 });
+
+document.getElementById('prevMonth').addEventListener('click', () => {
+  currentDate.setMonth(currentDate.getMonth() - 1);
+  loadEvents();
+});
+
+document.getElementById('nextMonth').addEventListener('click', () => {
+  currentDate.setMonth(currentDate.getMonth() + 1);
+  loadEvents();
+});
