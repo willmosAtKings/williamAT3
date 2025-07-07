@@ -41,7 +41,7 @@ def create_app():
 
     @app.route('/login', methods=['POST', 'GET'])
     def login():
-        from models.user import User  # Import here to avoid circular imports
+        from models.user import User
         
         if request.method == 'GET':
             return render_template('login.html')
@@ -49,7 +49,7 @@ def create_app():
         # Get JSON data
         if request.is_json:
             data = request.get_json()
-            email = data.get('email') #
+            email = data.get('email')
             password = data.get('password')
         else:
             email = request.form.get('email')
@@ -212,9 +212,42 @@ def create_app():
 
         return jsonify({'message': 'Event created successfully', 'event_id': event.id}), 200
 
+    @app.route('/api/events', methods=['GET'])
+    def get_events():
+        from models.event import Event
+
+        # Get all public events or events created by the current user
+        if 'user_id' not in session:
+            return jsonify({'error': 'Unauthorized'}), 401
+
+        user_id = session['user_id']
+
+        # Query for public events or events created by the current user
+        events = Event.query.filter(
+            (Event.is_public == True) | (Event.creator_id == user_id)
+        ).all()
+
+        # Convert events to JSON format
+        events_data = []
+        for event in events:
+            events_data.append({
+                'id': event.id,
+                'title': event.title,
+                'description': event.description,
+                'priority': event.priority,
+                'genre': event.genre,
+                'tags': event.tags,
+                'is_public': event.is_public,
+                'start_time': event.start_time.isoformat() if event.start_time else None,
+                'end_time': event.end_time.isoformat() if event.end_time else None,
+                'creator_id': event.creator_id
+            })
+
+        return jsonify(events_data), 200
+
     return app
 
 
-if __name__ == "__main__": 
-    app = create_app() 
-    app.run(host='127.0.0.1', port=5000, debug=True)
+if __name__ == "__main__":
+    app = create_app()
+    app.run(host='127.0.0.1', port=5001, debug=True)

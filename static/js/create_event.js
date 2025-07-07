@@ -28,8 +28,8 @@ document.getElementById('eventForm').addEventListener('submit', async function(e
 
     if (response.ok) {
       alert(data.message);
-      // Optionally reset form or redirect
-      this.reset();
+      // Redirect back to dashboard after successful creation
+      window.location.href = '/dashboard';
     } else {
       alert('Error: ' + (data.error || 'Unknown error'));
     }
