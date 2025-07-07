@@ -10,7 +10,7 @@ async function loadEvents() {
     const response = await fetch('/api/events');
     if (response.ok) {
       const events = await response.json();
-      displayEvents(events);
+      renderCalendar(currentDate, events);
     } else {
       console.error('Failed to load events');
     }
@@ -19,36 +19,78 @@ async function loadEvents() {
   }
 }
 
-// Function to display events on the calendar
-function displayEvents(events) {
-  // Clear existing events
-  document.querySelectorAll('.event-item').forEach(item => item.remove());
+const calendarGrid = document.querySelector('.calendar-grid');
+const monthYear = document.getElementById('monthYear');
 
-  events.forEach(event => {
-    const eventDate = new Date(event.start_time);
-    const dayNumber = eventDate.getDate();
+let currentDate = new Date();
 
-    // Find the corresponding day cell
-    const dayCells = document.querySelectorAll('.day-cell');
-    dayCells.forEach(cell => {
-      const dayNumberElement = cell.querySelector('.day-number');
-      if (dayNumberElement && parseInt(dayNumberElement.textContent) === dayNumber) {
-        // Create event element
-        const eventElement = document.createElement('div');
-        eventElement.className = 'event-item';
-        eventElement.innerHTML = `
-          <div class="event-title">${event.title}</div>
-          <div class="event-time">${formatTime(event.start_time)}</div>
-        `;
+function renderCalendar(date = new Date(), events = []) {
+  // Clear old tiles
+  document.querySelectorAll('.day-cell').forEach(e => e.remove());
 
-        // Add priority class for styling
-        eventElement.classList.add(`priority-${event.priority}`);
+  const year = date.getFullYear();
+  const month = date.getMonth();
 
-        cell.appendChild(eventElement);
-      }
-    });
+  const firstDayOfMonth = new Date(year, month, 1).getDay();
+  const totalDays = new Date(year, month + 1, 0).getDate();
+
+  monthYear.textContent = date.toLocaleString('default', {
+    month: 'long',
+    year: 'numeric',
   });
+
+  // Padding for days before the 1st
+  for (let i = 0; i < firstDayOfMonth; i++) {
+    const emptyCell = document.createElement('div');
+    emptyCell.classList.add('day-cell');
+    calendarGrid.appendChild(emptyCell);
+  }
+
+  // Actual days
+  for (let day = 1; day <= totalDays; day++) {
+    const cell = document.createElement('div');
+    cell.classList.add('day-cell');
+
+    const dayNum = document.createElement('div');
+    dayNum.classList.add('day-number');
+    dayNum.textContent = day;
+
+    // Add button (optional - appears on hover)
+    const addBtn = document.createElement('button');
+    addBtn.textContent = '+';
+    addBtn.classList.add('add-event-btn');
+    addBtn.onclick = () => {
+      const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+      window.location.href = `/event/create?date=${dateStr}`;
+    };
+
+    cell.appendChild(dayNum);
+    cell.appendChild(addBtn);
+
+    // Filter and add events
+    const dayEvents = events.filter(ev => {
+      const evDate = new Date(ev.start_time);
+      return (
+        evDate.getFullYear() === year &&
+        evDate.getMonth() === month &&
+        evDate.getDate() === day
+      );
+    });
+
+    dayEvents.forEach(event => {
+      const eventDiv = document.createElement('div');
+      eventDiv.classList.add('event-item', `priority-${event.priority}`);
+      eventDiv.innerHTML = `
+        <div class="event-title">${event.title}</div>
+        <div class="event-time">${formatTime(event.start_time)}</div>
+      `;
+      cell.appendChild(eventDiv);
+    });
+
+    calendarGrid.appendChild(cell);
+  }
 }
+
 
 // Helper function to format time
 function formatTime(timeString) {
