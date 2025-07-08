@@ -218,3 +218,25 @@ background-color: #0056b3;   /* Darker blue on hover */
   cursor: pointer;
   border-radius: 5px;
 }
+
+.add-event-btn {
+  background-color: #007bff;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  text-align: center;
+  line-height: 22px;
+  font-size: 16px;
+  padding: 0;
+}
+
+.day-cell {
+  position: relative;
+  border: 1px solid #ccc;
+  padding: 5px;
+  height: 120px;
+}
+
+.day-cell:hover .add-event-btn {
+  display: block;
+}
