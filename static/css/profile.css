@@ -1,63 +1,39 @@
-.user-menu {
-    position: relative;
-    display: inline-block;
-    font-family: sans-serif;
+.profile-container {
+    max-width: 600px;
+    margin: 80px auto;
+    padding: 20px;
   }
   
-  .user-profile {
-    display: flex;
-    align-items: center;
-    cursor: pointer;
-    gap: 10px;
+  .profile-card {
+    background: white;
+    padding: 30px;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    text-align: center;
   }
   
-  .user-profile .avatar {
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-  }
-  
-  .user-profile .arrow.down::after {
-    content: "▼";
-    font-size: 0.6rem;
-    margin-left: 5px;
-    color: #666;
-  }
-  
-  .menu-dropdown {
-    display: none;
-    position: absolute;
-    right: 0;
-    background-color: #fff;
-    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-    border-radius: 8px;
-    overflow: hidden;
-    margin-top: 10px;
-    z-index: 1000;
-    min-width: 150px;
-  }
-  
-  .menu-dropdown a,
-  .menu-dropdown button {
-    display: block;
-    width: 100%;
-    padding: 10px 15px;
-    text-align: left;
-    background: none;
-    border: none;
-    outline: none;
-    font-size: 0.9rem;
+  .profile-info-only h2 {
+    font-size: 1.4rem;
     color: #333;
+  }
+  
+  .profile-info-only .email {
+    color: #666;
+    font-size: 1rem;
+    margin-bottom: 20px;
+  }
+  
+  .logout-btn {
+    padding: 10px 20px;
+    font-size: 0.95rem;
+    background-color: #dc3545;
+    color: white;
+    border: none;
+    border-radius: 6px;
     cursor: pointer;
   }
   
-  .menu-dropdown a:hover,
-  .menu-dropdown button:hover {
-    background-color: #f0f0f0;
-  }
-  
-  /* Show menu when .show class is added */
-  .menu-dropdown.show {
-    display: block;
+  .logout-btn:hover {
+    background-color: #a51f2d;
   }
   

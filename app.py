@@ -159,11 +159,6 @@ def create_app():
         return response
 
 
-
-    @app.route('/profile')
-    def profile():
-        return render_template('profile.html')
-
     @app.route('/event/create', methods=['GET', 'POST'])
     def create_event():
         # Only teachers can create events
@@ -211,6 +206,17 @@ def create_app():
         db.session.commit()
 
         return jsonify({'message': 'Event created successfully', 'event_id': event.id}), 200
+    
+
+    @app.route('/profile')
+    def profile():
+        user_id = session.get('user_id')
+        if user_id:
+            user = db.session.get(User, user_id)
+            return render_template('profile.html', user=user)
+        return redirect('/login')
+
+
 
     @app.route('/api/events', methods=['GET'])
     def get_events():

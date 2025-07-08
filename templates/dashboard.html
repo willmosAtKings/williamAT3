@@ -24,10 +24,19 @@
       <div class="nav-center">
         <h1>Calendar</h1>
       </div>
-      <div class="nav-right">
-        <div class="profile">
-          <img src="/static/images/profile-placeholder.png" alt="Profile" />
+      <div class="user-menu">
+        <div class="user-profile" onclick="document.querySelector('.menu-dropdown').classList.toggle('show')">
+          <img src="/static/images/profile-placeholder.png" alt="User Avatar" class="avatar" />
           <span class="username">John Doe</span>
+          <i class="arrow down"></i>
+        </div>
+      
+        <div class="menu-dropdown">
+          <a href="/profile">My Profile</a>
+          <a href="/settings">Settings</a>
+          <form action="/logout" method="POST">
+            <button type="submit">Logout</button>
+          </form>
         </div>
       </div>
     </div>
