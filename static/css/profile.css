@@ -12,12 +12,12 @@
     text-align: center;
   }
   
-  .profile-info-only h2 {
+  .profile-info h2 {
     font-size: 1.4rem;
     color: #333;
   }
   
-  .profile-info-only .email {
+  .profile-info .email {
     color: #666;
     font-size: 1rem;
     margin-bottom: 20px;
