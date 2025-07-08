@@ -208,13 +208,27 @@ def create_app():
         return jsonify({'message': 'Event created successfully', 'event_id': event.id}), 200
     
 
-    @app.route('/profile')
+    @app.route('/profile/info')
     def profile():
         user_id = session.get('user_id')
         if user_id:
             user = db.session.get(User, user_id)
-            return render_template('profile.html', user=user)
+            return render_template('profile/info.html', user=user)
         return redirect('/login')
+    
+    @app.route('/profile/account')
+    def account():
+        return render_template('profile/account.html')
+    
+    @app.route('/profile/privacy')
+    def privacy():
+        return render_template('profile/privacy.html')
+    
+    @app.route('/profile/preferences')
+    def preferences():
+        return render_template('profile/preferences.html')
+    
+
 
 
 

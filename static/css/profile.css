@@ -37,3 +37,51 @@
     background-color: #a51f2d;
   }
   
+  body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    display: flex;
+    height: 100vh;
+  }
+  
+  .sidebar {
+    width: 220px;
+    background-color: #2c3e50;
+    padding: 20px;
+    box-sizing: border-box;
+    color: white;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .sidebar h2 {
+    margin-top: 0;
+    margin-bottom: 20px;
+    font-weight: 600;
+    font-size: 1.5rem;
+  }
+  
+  .sidebar .tab {
+    display: block;
+    color: #ecf0f1;
+    padding: 12px 15px;
+    margin-bottom: 10px;
+    text-decoration: none;
+    border-radius: 6px;
+    transition: background-color 0.3s ease;
+    cursor: pointer;
+  }
+  
+  .sidebar .tab:hover,
+  .sidebar .tab.active {
+    background-color: #34495e;
+    color: #fff;
+  }
+  
+  .main-content {
+    flex-grow: 1;
+    padding: 30px;
+    background-color: #ecf0f1;
+    overflow-y: auto;
+  }
+  

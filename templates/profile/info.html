@@ -3,10 +3,19 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>User Profile</title>
+  <title>Profile</title>
   <link rel="stylesheet" href="/static/css/profile.css" />
 </head>
 <body>
+<!-- sidebar.html (or included in all pages) -->
+  <div class="sidebar">
+    <h2>Profile Menu</h2>
+    <a href="/profile/info" class="tab">User Info</a>
+    <a href="/profile/account" class="tab">Account Settings</a>
+    <a href="/profile/privacy" class="tab">Privacy & Security</a>
+    <a href="/profile/preferences" class="tab">Preferences</a>
+  </div>
+  
   <div class="profile-container">
     <div class="profile-card">
       <div class="profile-info-only">
