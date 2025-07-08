@@ -35,9 +35,15 @@ def create_app():
     def index():
         return render_template('login.html')
 
-    @app.route('/dashboard')
+    @app.route("/dashboard", methods=["GET", "POST"])
     def dashboard():
-        return render_template('dashboard.html')       
+        if request.method == "POST":
+            # Example: redirect to the dashboard
+            return redirect(url_for("dashboard"))  # or return something like jsonify(...)
+        
+        # For normal GET requests (page load)
+        return render_template("dashboard.html")
+ 
 
     @app.route('/login', methods=['POST', 'GET'])
     def login():
