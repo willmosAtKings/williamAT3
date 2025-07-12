@@ -8,46 +8,83 @@
   <a href="/dashboard" class="back-button">← Back to Dashboard</a>
 
   <form id="eventForm">
-    <p>
-      Creating event for
-      <strong id="displayDate">(no date selected)</strong>
-    </p>
+    <label for="event_type">Event Type:</label>
+    <select id="event_type" name="event_type" required>
+      <option value="single">Single-Day Event</option>
+      <option value="multi">Multi-Day Event</option>
+      <option value="recurring">Recurring Event</option>
+    </select>
 
-    <label for="event_date_picker">Event Date:</label>
-    <input type="date" id="event_date_picker" name="event_date_picker" required>
-    <input type="hidden" id="event_date" name="event_date">
+    <div id="dateInputs">
+      <p>
+        Creating event for <strong id="displayDate">(no date selected)</strong>
+      </p>
+      <label for="event_date_picker">Event Date:</label>
+      <input type="date" id="event_date_picker" name="event_date_picker">
+      <input type="hidden" id="event_date" name="event_date">
+    </div>
 
-    <br><br>
+    <div id="multiDayInputs" style="display: none;">
+      <label>Start Date:</label>
+      <input type="date" id="multi_start_date">
+
+      <label>Start Time:</label>
+      <input type="time" id="multi_start_time">
+
+      <label>End Date:</label>
+      <input type="date" id="multi_end_date">
+
+      <label>End Time:</label>
+      <input type="time" id="multi_end_time">
+    </div>
+
+    <div id="recurringInputs" style="display: none;">
+      <label>Repeat Unit:</label>
+      <select id="rec_unit">
+        <option value="daily">Daily</option>
+        <option value="weekly">Weekly</option>
+        <option value="monthly">Monthly</option>
+      </select>
+
+      <label>Interval (every X units):</label>
+      <input type="number" id="rec_interval" min="1" value="1">
+
+      <label>Ends On:</label>
+      <input type="date" id="rec_ends">
+
+      <label>Weekdays (if weekly):</label><br>
+      <input type="checkbox" value="MO">Mon
+      <input type="checkbox" value="TU">Tue
+      <input type="checkbox" value="WE">Wed
+      <input type="checkbox" value="TH">Thu
+      <input type="checkbox" value="FR">Fri
+      <input type="checkbox" value="SA">Sat
+      <input type="checkbox" value="SU">Sun<br>
+    </div>
+
+    <br><hr><br>
 
     <label>Title:</label>
-    <input type="text" id="title" name="title" required><br>
+    <input type="text" id="title" required><br>
 
     <label>Description:</label>
-    <textarea id="description" name="description"></textarea><br>
+    <textarea id="description"></textarea><br>
 
     <label>Priority:</label>
-    <select id="priority" name="priority">
+    <select id="priority">
       <option value="0">Low</option>
       <option value="1">Medium</option>
       <option value="2">High</option>
     </select><br>
 
     <label>Genre:</label>
-    <input type="text" id="genre" name="genre" placeholder="e.g., Academic, Sports"><br>
+    <input type="text" id="genre"><br>
 
     <label>Tags (comma-separated):</label>
-    <input type="text" id="tags" name="tags"><br>
-
-    <label>Start Time:</label>
-    <input type="time" id="start_time" name="start_time" required>
-
-    <label>End Time:</label>
-    <input type="time" id="end_time" name="end_time" required>
-
-    <br><br>
+    <input type="text" id="tags"><br>
 
     <label>Public Event:</label>
-    <input type="checkbox" id="is_public" name="is_public" checked><br><br>
+    <input type="checkbox" id="is_public" checked><br><br>
 
     <button type="submit">Create Event</button>
   </form>

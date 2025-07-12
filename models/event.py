@@ -1,4 +1,5 @@
 from extensions import db
+from sqlalchemy import JSON
 
 class Event(db.Model):
     __tablename__ = 'events'
