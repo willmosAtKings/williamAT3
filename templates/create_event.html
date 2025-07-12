@@ -6,10 +6,18 @@
 </head>
 <body>
   <a href="/dashboard" class="back-button">← Back to Dashboard</a>
-  <form id="eventForm">
-    <p>Creating event for <strong>{{ date }}</strong></p>
 
-    <!-- <input type="hidden" id="csrf_token" value="{{ csrf_token }}"> -->
+  <form id="eventForm">
+    <p>
+      Creating event for
+      <strong id="displayDate">(no date selected)</strong>
+    </p>
+
+    <label for="event_date_picker">Event Date:</label>
+    <input type="date" id="event_date_picker" name="event_date_picker" required>
+    <input type="hidden" id="event_date" name="event_date">
+
+    <br><br>
 
     <label>Title:</label>
     <input type="text" id="title" name="title" required><br>
@@ -32,14 +40,14 @@
 
     <label>Start Time:</label>
     <input type="time" id="start_time" name="start_time" required>
-    
+
     <label>End Time:</label>
     <input type="time" id="end_time" name="end_time" required>
-    
-    <input type="hidden" id="event_date" name="event_date" required>
+
+    <br><br>
 
     <label>Public Event:</label>
-    <input type="checkbox" id="is_public" name="is_public" checked><br>
+    <input type="checkbox" id="is_public" name="is_public" checked><br><br>
 
     <button type="submit">Create Event</button>
   </form>
