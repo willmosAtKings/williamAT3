@@ -31,25 +31,26 @@ function renderCalendar(date = new Date(), events = []) {
   const year = date.getFullYear();
   const month = date.getMonth();
 
-  const firstDayOfMonth = new Date(year, month, 1).getDay();
   const totalDays = new Date(year, month + 1, 0).getDate();
+  const firstDayOfMonth = new Date(year, month, 1).getDay();
 
   monthYear.textContent = date.toLocaleString('default', {
     month: 'long',
     year: 'numeric',
   });
 
-  // Padding for days before the 1st
-  for (let i = 0; i < firstDayOfMonth; i++) {
-    const emptyCell = document.createElement('div');
-    emptyCell.classList.add('day-cell');
-    calendarGrid.appendChild(emptyCell);
-  }
-
-  // Actual days
+  // Actual days - positioned correctly using CSS Grid
   for (let day = 1; day <= totalDays; day++) {
     const cell = document.createElement('div');
     cell.classList.add('day-cell');
+
+    // Calculate grid position (row and column)
+    const dayOfWeek = (firstDayOfMonth + day - 1) % 7;
+    const weekNumber = Math.floor((firstDayOfMonth + day - 1) / 7);
+
+    // Set grid position
+    cell.style.gridColumn = dayOfWeek + 1;
+    cell.style.gridRow = weekNumber + 2; // +2 because row 1 is headers
 
     const dayNum = document.createElement('div');
     dayNum.classList.add('day-number');

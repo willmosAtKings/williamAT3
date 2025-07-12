@@ -14,6 +14,7 @@ border-bottom: 1px solid #ddd;
 position: sticky;
 top: 0;
 z-index: 1000;
+margin-left: 0; /* Ensure navbar starts at the right edge of sidebar */
 }
 
 .nav-left .create-button {
@@ -55,13 +56,20 @@ color: #444;
 }
 
 .calendar-container {
-padding: 1.5rem;
+padding: 1rem 1.5rem;
+flex: 1; /* Take remaining space */
+overflow: hidden; /* Prevent scrolling */
+display: flex;
+flex-direction: column;
 }
 
 .calendar-grid {
 display: grid;
 grid-template-columns: repeat(7, 1fr);
+grid-template-rows: auto repeat(6, 1fr); /* Header row + 6 weeks max */
 gap: 0.5rem;
+flex: 1; /* Take remaining space in container */
+height: 100%; /* Fill container height */
 }
 
 .day-header {
@@ -75,10 +83,12 @@ border-radius: 4px;
 .day-cell {
 background-color: #fff;
 border: 1px solid #ddd;
-min-height: 100px;
 border-radius: 4px;
 padding: 0.5rem;
 position: relative;
+overflow: hidden; /* Prevent content overflow */
+display: flex;
+flex-direction: column;
 }
 
 .day-cell:hover {
@@ -128,7 +138,11 @@ background-color: #1abc9c;
 /* Adjust main content to account for the sidebar */
 .main-content {
 margin-left: 250px;
-padding: 20px;
+padding: 0; /* Remove padding to allow navbar to extend full width */
+height: 100vh; /* Full viewport height */
+display: flex;
+flex-direction: column;
+overflow: hidden; /* Prevent scrolling */
 }
 
 /* Event styling */
@@ -178,23 +192,35 @@ padding: 20px;
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 1rem;
-  margin-bottom: 1rem;
+  gap: 2rem; /* Increased gap for fixed positioning */
+  margin: 1rem 0;
+  padding: 0 1.5rem;
 }
 
 .calendar-controls h2 {
   margin: 0;
   font-size: 1.5rem;
+  min-width: 200px; /* Fixed width to prevent shifting */
+  text-align: center;
 }
 
 .calendar-controls button {
   background-color: #007bff;
   color: white;
   border: none;
-  padding: 6px 12px;
-  font-size: 1rem;
+  padding: 8px 16px; /* Slightly larger for better visibility */
+  font-size: 1.2rem;
   cursor: pointer;
   border-radius: 5px;
+  min-width: 40px; /* Fixed width for arrows */
+  height: 40px; /* Fixed height */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.calendar-controls button:hover {
+  background-color: #0056b3;
 }
 
 .add-event-btn {
@@ -236,6 +262,14 @@ padding: 20px;
   width: 32px;
   height: 32px;
   border-radius: 50%;
+}
+
+.user-profile .username {
+  max-width: 200px; /* Limit width for long emails */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.9rem;
 }
 
 .user-profile .arrow.down::after {
@@ -280,4 +314,74 @@ padding: 20px;
 /* Show menu when .show class is added */
 .menu-dropdown.show {
   display: block;
+}
+
+/* sidebar */
+@media (max-width: 1200px) {
+  .sidebar {
+    width: 200px;
+  }
+
+  .main-content {
+    margin-left: 200px;
+  }
+
+  .calendar-controls h2 {
+    min-width: 180px;
+    font-size: 1.3rem;
+  }
+
+  .day-cell {
+    padding: 0.3rem;
+  }
+
+  .event-item {
+    font-size: 0.7rem;
+    padding: 1px 3px;
+  }
+}
+
+@media (max-width: 768px) {
+  .sidebar {
+    width: 60px;
+    padding: 10px;
+  }
+
+  .sidebar h2 {
+    font-size: 1rem;
+    writing-mode: vertical-rl;
+    text-orientation: mixed;
+  }
+
+  .sidebar .tab {
+    padding: 8px 5px;
+    font-size: 0.8rem;
+  }
+
+  .main-content {
+    margin-left: 60px;
+  }
+
+  @media (max-width: 768px) {
+    .navbar {
+      padding: 0.5rem 1rem;
+      margin-left: 60px;
+      width: calc(100% - 60px);
+    }
+  }
+  
+
+  .calendar-controls {
+    gap: 1rem;
+  }
+
+  .calendar-controls h2 {
+    min-width: 150px;
+    font-size: 1.1rem;
+  }
+
+  .user-profile .username {
+    max-width: 120px;
+    font-size: 0.8rem;
+  }
 }

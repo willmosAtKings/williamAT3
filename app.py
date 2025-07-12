@@ -40,9 +40,17 @@ def create_app():
         if request.method == "POST":
             # Example: redirect to the dashboard
             return redirect(url_for("dashboard"))  # or return something like jsonify(...)
-        
+
+        # Get current user information
+        user_email = None
+        if 'user_id' in session:
+            from models.user import User
+            user = db.session.get(User, session['user_id'])
+            if user:
+                user_email = user.email
+
         # For normal GET requests (page load)
-        return render_template("dashboard.html")
+        return render_template("dashboard.html", user_email=user_email)
  
 
     @app.route('/login', methods=['POST', 'GET'])

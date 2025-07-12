@@ -26,8 +26,8 @@
       </div>
       <div class="user-menu">
         <div class="user-profile" onclick="document.querySelector('.menu-dropdown').classList.toggle('show')">
-          <img src="/static/images/profile-placeholder.png" alt="User Avatar" class="avatar" />
-          <span class="username">John Doe</span>
+          <img src="/static/images/profile-placeholder.svg" alt="User Avatar" class="avatar" />
+          <span class="username">{{ user_email or 'Guest' }}</span>
           <i class="arrow down"></i>
         </div>
       
