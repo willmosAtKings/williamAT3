@@ -1,128 +1,126 @@
-window.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', () => {
+  console.log("create_event.js loaded and DOM ready");
+
   const urlParams = new URLSearchParams(window.location.search);
   const dateFromUrl = urlParams.get('date');
+
   const displayDateEl = document.getElementById('displayDate');
   const eventDatePicker = document.getElementById('event_date_picker');
   const eventDateHidden = document.getElementById('event_date');
 
+  // Autofill date from URL
   if (dateFromUrl) {
     displayDateEl.textContent = dateFromUrl;
     eventDatePicker.value = dateFromUrl;
     eventDateHidden.value = dateFromUrl;
   }
 
+  // Sync visible date picker with hidden input
   eventDatePicker.addEventListener('change', (e) => {
-    eventDateHidden.value = e.target.value;
-    displayDateEl.textContent = e.target.value || '(no date selected)';
+    const val = e.target.value;
+    eventDateHidden.value = val;
+    displayDateEl.textContent = val || '(no date selected)';
   });
 
-  document.getElementById('event_type').addEventListener('change', function () {
-    const type = this.value;
+  // Toggle section visibility based on selected type
+  const toggleInputs = () => {
+    const type = document.getElementById('event_type').value;
     document.getElementById('dateInputs').style.display = type === 'single' ? 'block' : 'none';
     document.getElementById('multiDayInputs').style.display = type === 'multi' ? 'block' : 'none';
     document.getElementById('recurringInputs').style.display = type === 'recurring' ? 'block' : 'none';
-  });
-});
-
-document.getElementById('eventForm').addEventListener('submit', async (event) => {
-  event.preventDefault();
-  const type = document.getElementById('event_type').value;
-
-  const data = {
-    title: document.getElementById('title').value,
-    description: document.getElementById('description').value,
-    priority: document.getElementById('priority').value,
-    genre: document.getElementById('genre').value,
-    tags: document.getElementById('tags').value,
-    is_public: document.getElementById('is_public').checked,
   };
 
-  if (type === 'single') {
-    const date = document.getElementById('event_date').value;
+  document.getElementById('event_type').addEventListener('change', toggleInputs);
+  toggleInputs(); // Run on page load too
 
-    // start time
-    const st = document.getElementById('start_time').value;
+  // Submit handler
+  document.getElementById('eventForm').addEventListener('submit', async (event) => {
+    event.preventDefault();
+    console.log("Form submit triggered");
 
-    // end time
-    const et = document.getElementById('end_time').value;
+    const type = document.getElementById('event_type').value;
 
-    if (!date || !st || !et) {
-      return alert('Please complete date and time fields.');
-    }
-
-    if (et <= st) {
-      return alert('End time must be after start time.');
-    }
-
-    data.start_time = `${date}T${st}`;
-    data.end_time = `${date}T${et}`;
-    data.is_recurring = false;
-  }
-
-  if (type === 'multi') {
-    // start date
-    const sd = document.getElementById('multi_start_date').value;
-
-    // end date
-    const ed = document.getElementById('multi_end_date').value;
-
-    // start time
-    const st = document.getElementById('multi_start_time').value;
-
-    // end time
-    const et = document.getElementById('multi_end_time').value;
-
-    if (!sd || !ed || !st || !et) {
-      return alert('Please complete all start/end fields.');
-    }
-
-    if (sd > ed || (sd === ed && et <= st)) {
-      return alert('End must be after start.');
-    }
-
-    data.start_time = `${sd}T${st}`;
-    data.end_time = `${ed}T${et}`;
-    data.is_recurring = false;
-  }
-
-  if (type === 'recurring') {
-    const unit = document.getElementById('rec_unit').value;
-    const interval = parseInt(document.getElementById('rec_interval').value);
-    const ends = document.getElementById('rec_ends').value;
-
-    const weekdays = Array.from(document.querySelectorAll('#recurringInputs input[type=checkbox]:checked'))
-      .map(cb => cb.value);
-
-    const today = new Date().toISOString().split('T')[0];
-    data.start_time = `${today}T09:00`;
-    data.end_time = `${today}T10:00`;
-
-    data.is_recurring = true;
-    data.recurrence = {
-      unit: unit,
-      interval: interval,
-      weekdays: weekdays.length > 0 ? weekdays : undefined,
-      ends: ends || null
+    const data = {
+      title: document.getElementById('title').value.trim(),
+      description: document.getElementById('description').value.trim(),
+      priority: document.getElementById('priority').value,
+      genre: document.getElementById('genre').value.trim(),
+      tags: document.getElementById('tags').value.trim(),
+      is_public: document.getElementById('is_public').checked,
     };
-  }
 
-  try {
-    const response = await fetch('/event/create', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(data)
-    });
+    if (type === 'single') {
+      const date = document.getElementById('event_date').value;
+      const start = document.getElementById('start_time')?.value || '09:00';
+      const end = document.getElementById('end_time')?.value || '10:00';
 
-    const res = await response.json();
-    if (response.ok) {
-      alert(res.message);
-      window.location.href = '/dashboard';
-    } else {
-      alert('Error: ' + (res.error || 'Unknown error'));
+      if (!date) return alert('Please select a valid date.');
+
+      data.start_time = `${date}T${start}`;
+      data.end_time = `${date}T${end}`;
+      data.is_recurring = false;
     }
-  } catch (err) {
-    alert('Network error: ' + err.message);
-  }
+
+    if (type === 'multi') {
+      const sd = document.getElementById('multi_start_date').value;
+      const ed = document.getElementById('multi_end_date').value;
+      const st = document.getElementById('multi_start_time').value;
+      const et = document.getElementById('multi_end_time').value;
+
+      if (!sd || !ed || !st || !et) {
+        return alert('Please fill all multi-day start/end fields.');
+      }
+
+      data.start_time = `${sd}T${st}`;
+      data.end_time = `${ed}T${et}`;
+      data.is_recurring = false;
+    }
+
+    if (type === 'recurring') {
+      const unit = document.getElementById('rec_unit').value;
+      const interval = parseInt(document.getElementById('rec_interval').value);
+      const ends = document.getElementById('rec_ends').value;
+
+      const weekdays = Array.from(
+        document.querySelectorAll('#recurringInputs input[type=checkbox]:checked')
+      ).map(cb => cb.value);
+
+      const today = new Date().toISOString().split('T')[0];
+      data.start_time = `${today}T09:00`;
+      data.end_time = `${today}T10:00`;
+
+      data.is_recurring = true;
+      data.recurrence = {
+        unit,
+        interval,
+        weekdays: weekdays.length > 0 ? weekdays : undefined,
+        ends: ends || null
+      };
+    }
+
+    console.log("📦 Sending event data:", data);
+
+    try {
+      const response = await fetch('/event/create', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(data)
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        alert(result.message || 'Event created!');
+        window.location.href = '/dashboard';
+      } else {
+        console.error('Server returned error:', result);
+        alert(result.error || 'Failed to create event');
+      }
+    } catch (err) {
+      console.error('Network error:', err);
+      alert('Network error: ' + err.message);
+    }
+  });
 });
