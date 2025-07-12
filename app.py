@@ -177,7 +177,7 @@ def create_app():
     def create_event():
         # Only teachers can create events
         if session.get('user_role') != 'teacher':
-            return jsonify({'error': 'Unauthorized'}), 403
+            return jsonify({'error': 'Unauthorised'}), 403
 
         if request.method == 'GET':
             return render_template('create_event.html')  # your form page

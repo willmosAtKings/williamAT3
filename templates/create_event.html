@@ -5,7 +5,10 @@
   <title>Create Event</title>
 </head>
 <body>
+  <a href="/dashboard" class="back-button">← Back to Dashboard</a>
   <form id="eventForm">
+    <p>Creating event for <strong>{{ date }}</strong></p>
+
     <!-- <input type="hidden" id="csrf_token" value="{{ csrf_token }}"> -->
 
     <label>Title:</label>
@@ -28,10 +31,12 @@
     <input type="text" id="tags" name="tags"><br>
 
     <label>Start Time:</label>
-    <input type="datetime-local" id="start_time" name="start_time" required><br>
-
+    <input type="time" id="start_time" name="start_time" required>
+    
     <label>End Time:</label>
-    <input type="datetime-local" id="end_time" name="end_time" required><br>
+    <input type="time" id="end_time" name="end_time" required>
+    
+    <input type="hidden" id="event_date" name="event_date" required>
 
     <label>Public Event:</label>
     <input type="checkbox" id="is_public" name="is_public" checked><br>
