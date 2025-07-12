@@ -16,7 +16,6 @@ window.addEventListener('DOMContentLoaded', () => {
     displayDateEl.textContent = e.target.value || '(no date selected)';
   });
 
-  // Toggle form sections
   document.getElementById('event_type').addEventListener('change', function () {
     const type = this.value;
     document.getElementById('dateInputs').style.display = type === 'single' ? 'block' : 'none';
@@ -40,20 +39,46 @@ document.getElementById('eventForm').addEventListener('submit', async (event) =>
 
   if (type === 'single') {
     const date = document.getElementById('event_date').value;
-    if (!date) return alert('Please select a date.');
 
-    data.start_time = `${date}T${document.getElementById('start_time').value}`;
-    data.end_time = `${date}T${document.getElementById('end_time').value}`;
+    // start time
+    const st = document.getElementById('start_time').value;
+
+    // end time
+    const et = document.getElementById('end_time').value;
+
+    if (!date || !st || !et) {
+      return alert('Please complete date and time fields.');
+    }
+
+    if (et <= st) {
+      return alert('End time must be after start time.');
+    }
+
+    data.start_time = `${date}T${st}`;
+    data.end_time = `${date}T${et}`;
     data.is_recurring = false;
   }
 
   if (type === 'multi') {
+    // start date
     const sd = document.getElementById('multi_start_date').value;
+
+    // end date
     const ed = document.getElementById('multi_end_date').value;
+
+    // start time
     const st = document.getElementById('multi_start_time').value;
+
+    // end time
     const et = document.getElementById('multi_end_time').value;
 
-    if (!sd || !ed || !st || !et) return alert('Please complete all start/end fields.');
+    if (!sd || !ed || !st || !et) {
+      return alert('Please complete all start/end fields.');
+    }
+
+    if (sd > ed || (sd === ed && et <= st)) {
+      return alert('End must be after start.');
+    }
 
     data.start_time = `${sd}T${st}`;
     data.end_time = `${ed}T${et}`;

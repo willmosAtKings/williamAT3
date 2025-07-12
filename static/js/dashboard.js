@@ -25,12 +25,23 @@ const monthYear = document.getElementById('monthYear');
 let currentDate = new Date();
 
 function renderCalendar(date = new Date(), events = []) {
-  // Clear old tiles
-  document.querySelectorAll('.day-cell').forEach(e => e.remove());
+  console.log('renderCalendar called');
+  const calendarGrid = document.querySelector('.calendar-grid');
+
+  // Clear all children (headers + days)
+  calendarGrid.innerHTML = '';
+
+  // Re-add weekday headers
+  const headers = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  for (const day of headers) {
+    const header = document.createElement('div');
+    header.classList.add('day-header');
+    header.textContent = day;
+    calendarGrid.appendChild(header);
+  }
 
   const year = date.getFullYear();
   const month = date.getMonth();
-
   const totalDays = new Date(year, month + 1, 0).getDate();
   const firstDayOfMonth = new Date(year, month, 1).getDay();
 
@@ -39,24 +50,20 @@ function renderCalendar(date = new Date(), events = []) {
     year: 'numeric',
   });
 
-  // Actual days - positioned correctly using CSS Grid
   for (let day = 1; day <= totalDays; day++) {
     const cell = document.createElement('div');
     cell.classList.add('day-cell');
 
-    // Calculate grid position (row and column)
     const dayOfWeek = (firstDayOfMonth + day - 1) % 7;
     const weekNumber = Math.floor((firstDayOfMonth + day - 1) / 7);
 
-    // Set grid position
     cell.style.gridColumn = dayOfWeek + 1;
-    cell.style.gridRow = weekNumber + 2; // +2 because row 1 is headers
+    cell.style.gridRow = weekNumber + 2;
 
     const dayNum = document.createElement('div');
     dayNum.classList.add('day-number');
     dayNum.textContent = day;
 
-    // Add button (optional - appears on hover)
     const addBtn = document.createElement('button');
     addBtn.textContent = '+';
     addBtn.classList.add('add-event-btn');
@@ -68,7 +75,6 @@ function renderCalendar(date = new Date(), events = []) {
     cell.appendChild(dayNum);
     cell.appendChild(addBtn);
 
-    // Filter and add events
     const dayEvents = events.filter(ev => {
       const evDate = new Date(ev.start_time);
       return (
@@ -91,6 +97,7 @@ function renderCalendar(date = new Date(), events = []) {
     calendarGrid.appendChild(cell);
   }
 }
+  
 
 
 // Helper function to format time
