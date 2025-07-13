@@ -22,7 +22,7 @@
       <label for="event_date_picker">Event Date:</label>
       <input type="date" id="event_date_picker" name="event_date_picker">
       <input type="hidden" id="event_date" name="event_date">
-      
+
       <label for="start_time">Start Time:</label>
       <input type="time" id="start_time" value="09:00">
       
@@ -33,6 +33,9 @@
     </div>
 
     <div id="multiDayInputs" style="display: none;">
+      <p>
+        Creating event for <strong id="displayDate">(no date selected)</strong>
+      </p>
       <label>Start Date:</label>
       <input type="date" id="multi_start_date">
 
@@ -47,6 +50,9 @@
     </div>
 
     <div id="recurringInputs" style="display: none;">
+      <p>
+        Creating event for <strong id="displayDate">(no date selected)</strong>
+      </p>
       <label>Repeat Unit:</label>
       <select id="rec_unit">
         <option value="daily">Daily</option>
