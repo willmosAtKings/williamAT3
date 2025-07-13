@@ -43,26 +43,56 @@ document.addEventListener('DOMContentLoaded', () => {
   // Toggle input sections based on event type
   const toggleInputs = () => {
     const type = document.getElementById('event_type').value;
-
+  
     document.getElementById('singleDayInputs').style.display = type === 'single' ? 'block' : 'none';
     document.getElementById('multiDayInputs').style.display = type === 'multi' ? 'block' : 'none';
     document.getElementById('recurringDayInputs').style.display = type === 'recurring' ? 'block' : 'none';
-
-    // Re-insert selected date into the relevant section
+  
     if (selectedDate) {
-      if (type === 'single') {
-        eventDatePicker.value = selectedDate;
-        eventDateHidden.value = selectedDate;
-        displayDateEl.textContent = selectedDate;
-      } else if (type === 'multi') {
-        document.getElementById('multi_start_date').value = selectedDate;
-        document.getElementById('multi_end_date').value = selectedDate;
-      } else if (type === 'recurring') {
-        document.getElementById('rec_ends').value = selectedDate;
-      }
+      eventDatePicker.value = selectedDate;
+      eventDateHidden.value = selectedDate;
+      displayDateEl.textContent = selectedDate;
+  
+      const multiStart = document.getElementById('multi_start_date');
+      const multiEnd = document.getElementById('multi_end_date');
+      const recEnds = document.getElementById('rec_ends');
+  
+      if (multiStart) multiStart.value = selectedDate;
+      if (multiEnd) multiEnd.value = selectedDate;
+      if (recEnds) recEnds.value = selectedDate;
     }
   };
 
   document.getElementById('event_type').addEventListener('change', toggleInputs);
   toggleInputs(); // Run on page load
+
+  window.addEventListener('changeCreateEventDate', (e) => {
+    const newDate = e.detail;
+    selectedDate = newDate;
+  
+    const displayDateEl = document.getElementById('displayDate');
+    const eventDatePicker = document.getElementById('event_date_picker');
+    const eventDateHidden = document.getElementById('event_date');
+  
+    if (eventDatePicker) eventDatePicker.value = newDate;
+    if (eventDateHidden) eventDateHidden.value = newDate;
+    if (displayDateEl) displayDateEl.textContent = newDate;
+  
+    const multiStart = document.getElementById('multi_start_date');
+    const multiEnd = document.getElementById('multi_end_date');
+    const recEnds = document.getElementById('rec_ends');
+  
+    if (multiStart) multiStart.value = newDate;
+    if (multiEnd) multiEnd.value = newDate;
+    if (recEnds) recEnds.value = newDate;
+  
+    // Also re-run the event type toggling to reflect changes
+    toggleInputs();
+  });
+
+  if (!displayDateEl.textContent || displayDateEl.textContent === '{{date}}') {
+    displayDateEl.textContent = selectedDate || '(no date selected)';
+  }
+  
+
 });

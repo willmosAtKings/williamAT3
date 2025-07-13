@@ -69,8 +69,16 @@ function renderCalendar(date = new Date(), events = []) {
     addBtn.classList.add('add-event-btn');
     addBtn.onclick = () => {
       const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-      window.location.href = `/event/create?date=${dateStr}`;
+    
+      if (window.location.pathname === '/event/create') {
+        // Already on create_event page — just update the date
+        window.dispatchEvent(new CustomEvent('changeCreateEventDate', { detail: dateStr }));
+      } else {
+        // Navigate to create_event page with date in query param
+        window.location.href = `/event/create?date=${dateStr}`;
+      }
     };
+    
 
     cell.appendChild(dayNum);
     cell.appendChild(addBtn);
