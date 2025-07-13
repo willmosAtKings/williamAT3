@@ -25,6 +25,12 @@ document.addEventListener('DOMContentLoaded', () => {
     if (multiStart) multiStart.value = selectedDate;
     if (multiEnd) multiEnd.value = selectedDate;
     if (recEnds) recEnds.value = selectedDate;
+
+
+    // deletes date from url
+    urlParams.delete('date');
+    const newUrl = window.location.pathname + (urlParams.toString() ? '?' + urlParams.toString() : '');
+    window.history.replaceState({}, '', newUrl);
   }
 
   // Keep selected date up to date
@@ -38,9 +44,9 @@ document.addEventListener('DOMContentLoaded', () => {
   const toggleInputs = () => {
     const type = document.getElementById('event_type').value;
 
-    document.getElementById('dateInputs').style.display = type === 'single' ? 'block' : 'none';
+    document.getElementById('singleDayInputs').style.display = type === 'single' ? 'block' : 'none';
     document.getElementById('multiDayInputs').style.display = type === 'multi' ? 'block' : 'none';
-    document.getElementById('recurringInputs').style.display = type === 'recurring' ? 'block' : 'none';
+    document.getElementById('recurringDayInputs').style.display = type === 'recurring' ? 'block' : 'none';
 
     // Re-insert selected date into the relevant section
     if (selectedDate) {
