@@ -1,8 +1,21 @@
-// Handle Create Event button click - navigate to create event page
+// --- THIS IS THE FIX ---
+// Modify the main Create Event button to be context-aware
 document.querySelector('.create-button').addEventListener('click', function(e) {
   e.preventDefault();
-  window.location.href = '/event/create';
+  
+  // Get the currently viewed date from our global variable
+  const date = currentDate;
+  
+  // Format it into YYYY-MM-DD
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  const dateStr = `${year}-${month}-${day}`;
+  
+  // Navigate to the create page with the date pre-filled in the URL
+  window.location.href = `/event/create?date=${dateStr}`;
 });
+// --- END OF FIX ---
 
 const calendarGrid = document.querySelector('.calendar-grid');
 let currentDate = new Date();
@@ -144,7 +157,6 @@ function renderMonthCalendar(date = new Date(), events = []) {
   }
 }
 
-// --- NEW, ADVANCED renderCalendar FUNCTION ---
 function renderCalendar(events, view) {
     const container = document.getElementById('calendarContainer');
     container.innerHTML = '';
@@ -209,7 +221,6 @@ function renderCalendar(events, view) {
         const eventsContainer = document.createElement('div');
         eventsContainer.className = 'events-container';
 
-        // --- OVERLAPPING EVENT LOGIC ---
         const dayEvents = events
             .map(ev => ({ ...ev, start: new Date(ev.start_time), end: new Date(ev.end_time) }))
             .filter(ev => {
@@ -279,13 +290,12 @@ function renderCalendar(events, view) {
             eventItem.style.top = `${startMinutes}px`;
             eventItem.style.height = `${duration}px`;
             eventItem.style.left = `${left}%`;
-            eventItem.style.width = `calc(${width}% - 4px)`; // -4px for a small margin
+            eventItem.style.width = `calc(${width}% - 4px)`;
             
             eventItem.innerHTML = `<div class="event-title">${event.title}</div><div class="event-time">${formatTime(event.start_time)} - ${formatTime(event.end_time)}</div>`;
             eventItem.addEventListener('click', () => showEventDetails(event));
             eventsContainer.appendChild(eventItem);
         });
-        // --- END OVERLAPPING LOGIC ---
 
         dayColumn.appendChild(eventsContainer);
 
@@ -302,13 +312,11 @@ function renderCalendar(events, view) {
     container.appendChild(grid);
 }
 
-// Helper function to format time
 function formatTime(timeString) {
   const date = new Date(timeString);
   return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
 }
 
-// Event Listeners
 document.getElementById('calendarView').addEventListener('change', () => {
   document.querySelector('.calendar-grid').innerHTML = '';
   document.getElementById('calendarContainer').innerHTML = '';
@@ -347,7 +355,6 @@ document.addEventListener('DOMContentLoaded', function() {
   loadEventsForCurrentView();
 });
 
-// Event modal functionality
 const eventModal = document.getElementById('eventModal');
 const closeModal = document.querySelector('.close-modal');
 
