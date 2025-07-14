@@ -41,14 +41,20 @@
     </div>
 
     <!-- buttons to look back and forth between months-->
+
+    
     <div class="calendar-controls">
       <button id="prevMonth">&#8592;</button>
       <h2 id="monthYear"></h2>
+      <select id="calendarView">
+        <option value="month">Month</option>
+        <option value="week">Week</option>
+        <option value="day">Day</option>
+      </select>
       <button id="nextMonth">&#8594;</button>
     </div>
 
     <div class="calendar-container">
-      <!-- replace with calendar rendering logic -->
       <div class="calendar-grid">
         <div class="day-header">Sun</div>
         <div class="day-header">Mon</div>
@@ -58,14 +64,12 @@
         <div class="day-header">Fri</div>
         <div class="day-header">Sat</div>
 
-        
-
-
       </div>
     </div>
+
+    <div id="calendarContainer" style="display: none;"></div> <!-- for week/day views only -->
+
   </div>
-
-
   <script src="/static/js/dashboard.js"></script>
 </body>
 </html>

@@ -368,3 +368,24 @@ html, body {
     font-size: 0.8rem;
   }
 }
+
+/* ===== CALENDAR VIEW TYPE =====*/
+#calendarContainer {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.day-column, .hour-slot {
+  border: 1px solid #ccc;
+  padding: 0.5rem;
+  flex: 1;
+  min-width: 100px;
+}
+
+.event {
+  background: #e0f7fa;
+  margin: 2px 0;
+  padding: 2px 4px;
+  border-radius: 4px;
+}

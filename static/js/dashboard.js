@@ -10,7 +10,7 @@ async function loadEvents() {
     const response = await fetch('/api/events');
     if (response.ok) {
       const events = await response.json();
-      renderCalendar(currentDate, events);
+      renderMonthCalendar(currentDate, events);
     } else {
       console.error('Failed to load events');
     }
@@ -24,8 +24,8 @@ const monthYear = document.getElementById('monthYear');
 
 let currentDate = new Date();
 
-function renderCalendar(date = new Date(), events = []) {
-  console.log('renderCalendar called');
+function renderMonthCalendar(date = new Date(), events = []) {
+  console.log('render MonthCalendar called'); //
   const calendarGrid = document.querySelector('.calendar-grid');
 
   // Clear all children (headers + days)
@@ -109,6 +109,64 @@ function renderCalendar(date = new Date(), events = []) {
   }
 }
   
+function renderCalendar(events, view) {
+  const container = document.getElementById('calendarContainer');
+  container.innerHTML = '';
+
+  if (view === 'day') {
+    const hours = [...Array(24).keys()];
+    container.innerHTML = '<h3>Today\'s Events</h3>';
+    hours.forEach(hour => {
+      const slot = document.createElement('div');
+      slot.className = 'hour-slot';
+      slot.textContent = `${hour}:00`;
+
+      const matching = events.filter(e => new Date(e.start_time).getHours() === hour);
+      matching.forEach(ev => {
+        const item = document.createElement('div');
+        item.className = 'event';
+        item.textContent = ev.title;
+        slot.appendChild(item);
+      });
+
+      container.appendChild(slot);
+    });
+
+  } else if (view === 'week') {
+    const days = [...Array(7).keys()].map(i => {
+      const d = new Date();
+      d.setDate(d.getDate() + i);
+      return d;
+    });
+
+    days.forEach(day => {
+      const column = document.createElement('div');
+      column.className = 'day-column';
+
+      const label = document.createElement('h4');
+      label.textContent = day.toDateString();
+      column.appendChild(label);
+
+      const matching = events.filter(e => {
+        const d = new Date(e.start_time);
+        return d.toDateString() === day.toDateString();
+      });
+
+      matching.forEach(ev => {
+        const item = document.createElement('div');
+        item.className = 'event';
+        item.textContent = ev.title;
+        column.appendChild(item);
+      });
+
+      container.appendChild(column);
+    });
+
+  } else {
+    // TODO: Add or keep your existing monthly layout
+    container.innerHTML = '<p>Monthly view not implemented here yet.</p>';
+  }
+}
 
 
 // Helper function to format time
@@ -120,6 +178,45 @@ function formatTime(timeString) {
     hour12: true
   });
 }
+
+document.getElementById('calendarView').addEventListener('change', async (e) => {
+  const view = e.target.value;
+
+  // get first day of the month
+  const start = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1)
+    .toISOString()
+    .split('T')[0];
+
+  // Clear old content
+  document.querySelector('.calendar-grid').innerHTML = '';
+  document.getElementById('calendarContainer').innerHTML = '';
+
+  // Toggle visibility
+  if (view === 'month') {
+    document.querySelector('.calendar-grid').style.display = 'grid';
+    document.getElementById('calendarContainer').style.display = 'none';
+  } else {
+    document.querySelector('.calendar-grid').style.display = 'none';
+    document.getElementById('calendarContainer').style.display = 'block';
+  }
+
+  try {
+    const res = await fetch(`/api/events?range=${view}&start=${start}`);
+    const events = await res.json();
+
+    if (view === 'month') {
+      renderMonthCalendar(currentDate, events);
+    } else {
+      renderCalendar(events, view);
+    }
+  } catch (err) {
+    console.error("Failed to load events", err);
+  }
+});
+
+
+
+
 
 // Load events when the page loads
 document.addEventListener('DOMContentLoaded', function() {

@@ -306,38 +306,49 @@ def create_app():
 
 
 
-    @app.route('/api/events', methods=['GET'])
+    @app.route('/api/events')
     def get_events():
         from models.event import Event
 
-        # Get all public events or events created by the current user
         if 'user_id' not in session:
             return jsonify({'error': 'Unauthorized'}), 401
 
         user_id = session['user_id']
+        range_type = request.args.get('range', 'month')  # default is 'month'
+        start_str = request.args.get('start') or request.args.get('date')
 
-        # Query for public events or events created by the current user
-        events = Event.query.filter(
-            (Event.is_public == True) | (Event.creator_id == user_id)
-        ).all()
+        query = Event.query.filter((Event.is_public == True) | (Event.creator_id == user_id))
 
-        # Convert events to JSON format
-        events_data = []
-        for event in events:
-            events_data.append({
-                'id': event.id,
-                'title': event.title,
-                'description': event.description,
-                'priority': event.priority,
-                'genre': event.genre,
-                'tags': event.tags,
-                'is_public': event.is_public,
-                'start_time': event.start_time.isoformat() if event.start_time else None,
-                'end_time': event.end_time.isoformat() if event.end_time else None,
-                'creator_id': event.creator_id
-            })
+        if start_str:
+            try:
+                start = datetime.fromisoformat(start_str)
+                if range_type == 'day':
+                    end = start + timedelta(days=1)
+                elif range_type == 'week':
+                    end = start + timedelta(days=7)
+                else:
+                    end = start + timedelta(days=31)
+                query = query.filter(Event.start_time >= start, Event.start_time < end)
+            except Exception:
+                return jsonify({'error': 'Invalid date format'}), 400
 
-        return jsonify(events_data), 200
+        events = query.all()
+
+        return jsonify([
+            {
+                'id': e.id,
+                'title': e.title,
+                'description': e.description,
+                'priority': e.priority,
+                'genre': e.genre,
+                'tags': e.tags,
+                'is_public': e.is_public,
+                'start_time': e.start_time.isoformat(),
+                'end_time': e.end_time.isoformat(),
+                'creator_id': e.creator_id
+            } for e in events
+        ])
+
 
     return app
 
