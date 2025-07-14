@@ -167,22 +167,22 @@ html, body {
 /* ===== CALENDAR GRID ===== */
 .calendar-container {
   flex: 1;
-  padding: 5px 1rem 1rem; /* Reduced top padding */
-  margin-top: 5px; /* Reduced top margin */
+  padding: 15px 1rem 1rem;
+  margin-top: 10px;
   display: flex;
   flex-direction: column;
   overflow: hidden;
   box-sizing: border-box;
-  height: calc(100vh - 74px); /* Adjusted for navbar height */
+  height: calc(100vh - 74px);
 }
 
 .calendar-grid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  grid-template-rows: auto repeat(6, 1fr); /* header + 6 weeks */
-  gap: 0.5rem; /* ← ensures equal spacing all around cells */
+  grid-template-rows: auto repeat(6, 1fr);
+  gap: 0.5rem;
   flex-grow: 1;
-  height: calc(100vh - 160px); /* Navbar + controls height estimate */
+  height: calc(100vh - 160px);
   box-sizing: border-box;
 }
 
@@ -331,12 +331,12 @@ html, body {
 
 /* ===== CALENDAR VIEW TYPE =====*/
 #calendarContainer {
-  padding: 0px;
-  margin-top: 0px;
+  padding: 15px 0 0 0;
+  margin-top: 10px;
   height: auto;
   max-height: calc(100vh - 80px);
   overflow-y: auto;
-  overflow-x: hidden; /* Prevent horizontal scrolling */
+  overflow-x: hidden;
   position: relative;
   width: 100%;
 }
@@ -348,7 +348,7 @@ html, body {
   border: 1px solid #ddd;
   height: fit-content;
   position: relative;
-  overflow-x: hidden; /* Prevent horizontal scrolling */
+  overflow-x: hidden;
 }
 
 /* Fixed grid layouts */
@@ -379,7 +379,7 @@ html, body {
   position: sticky;
   top: 0;
   z-index: 20;
-  overflow: hidden; /* Prevent text overflow */
+  overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -412,7 +412,7 @@ html, body {
   width: 60px;
   min-width: 60px;
   max-width: 60px;
-  flex-shrink: 0; /* Prevent the time column from shrinking */
+  flex-shrink: 0;
 }
 
 .hour-label {
@@ -426,54 +426,82 @@ html, body {
   box-sizing: border-box;
 }
 
-/* Common styles for day columns */
+/* Day and week view layout */
 .day-column {
-  border-right: 1px solid #eee;
   position: relative;
-  min-width: 0; /* Allow columns to shrink below their content size */
-  overflow: hidden; /* Prevent content overflow */
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid #eee;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .week-grid .day-column {
-  max-width: calc(100% / 7); /* Each column takes exactly 1/7 of the grid width */
+  max-width: calc(100% / 7);
 }
 
 .day-column:last-child {
   border-right: none;
 }
 
+.hours-container {
+  position: relative;
+  height: calc(24 * 60px); /* 24 hours * 60px per hour */
+  z-index: 1;
+}
+
 .hour-cell {
   height: 60px;
   border-bottom: 1px solid #eee;
-  position: relative;
   box-sizing: border-box;
 }
 
 .hour-cell-current {
-  background-color: #fffde7; /* A very light yellow */
+  background-color: #fffde7;
 }
 
-/* Event styling in day/week view */
-#calendarContainer .event-item {
+.events-container {
   position: absolute;
-  left: 2px;
-  right: 2px;
-  box-sizing: border-box;
-  width: calc(100% - 4px);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  top: 40px; /* Header height */
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 2;
+  pointer-events: none; /* Allow clicks to pass through to hour cells */
 }
 
-/* Current time indicator */
+.event-item {
+  position: absolute;
+  left: 4px;
+  right: 4px;
+  background-color: #e3f2fd;
+  border-left: 3px solid #2196f3;
+  border-radius: 4px;
+  padding: 4px;
+  font-size: 0.8rem;
+  overflow: hidden;
+  pointer-events: auto; /* Make events clickable */
+  z-index: 5;
+}
+
 .current-time-line {
   position: absolute;
   left: 0;
   right: 0;
   height: 2px;
-  background-color: #e53935; /* A slightly darker red */
+  background-color: #e53935;
   z-index: 10;
-  pointer-events: none; /* Make sure it doesn't block clicks on events */
+  pointer-events: none;
+}
+
+/* Make day headers in week view clickable */
+.week-grid .day-header-label {
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.week-grid .day-header-label:hover {
+  background-color: #e3f2fd;
 }
 
 /* Date navigation container */
@@ -525,30 +553,4 @@ html, body {
   border-radius: 4px;
   background-color: #fff;
   font-size: 0.9rem;
-}
-
-/* Remove the date header from day view */
-#calendarContainer h3 {
-  display: none;
-}
-
-/* Make day headers in week view clickable */
-.week-grid .day-header-label {
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-
-.week-grid .day-header-label:hover {
-  background-color: #e3f2fd;
-}
-
-/* Add some spacing between navbar and calendar content */
-.calendar-container {
-  padding-top: 15px;
-  margin-top: 10px;
-}
-
-#calendarContainer {
-  padding-top: 15px;
-  margin-top: 10px;
 }

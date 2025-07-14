@@ -285,8 +285,11 @@ function renderCalendar(events, view) {
       
       dayColumn.appendChild(dayHeader);
       
-      let totalEventsForDay = 0;
+      // Create a container for the hour cells
+      const hoursContainer = document.createElement('div');
+      hoursContainer.className = 'hours-container';
       
+      // Add hour cells to the container
       hours.forEach(hour => {
         const hourCell = document.createElement('div');
         hourCell.className = 'hour-cell';
@@ -295,72 +298,82 @@ function renderCalendar(events, view) {
             hourCell.classList.add('hour-cell-current');
         }
         
-        // Simplified event filtering
-        const dayEvents = events.filter(ev => {
-          const evStart = new Date(ev.start_time);
-          const evEnd = new Date(ev.end_time);
-          
-          // Check if the event overlaps with this hour
-          const hourStart = new Date(dayDate);
-          hourStart.setHours(hour, 0, 0, 0);
-          
-          const hourEnd = new Date(dayDate);
-          hourEnd.setHours(hour + 1, 0, 0, 0);
-          
-          return (evStart < hourEnd && evEnd > hourStart);
-        });
-        
-        console.log(`Day ${dayDate.toDateString()}, Hour ${hour}: Found ${dayEvents.length} events`);
-        totalEventsForDay += dayEvents.length;
-        
-        dayEvents.forEach(ev => {
-          console.log(`Rendering event: ${ev.title} at ${ev.start_time}`);
-          const evStart = new Date(ev.start_time);
-          const evEnd = new Date(ev.end_time);
-          const item = document.createElement('div');
-          item.className = `event-item priority-${ev.priority || 0}`;
-          
-          let topPercent = 0;
-          let heightPercent = 0;
-
-          if (evStart.getHours() < hour) {
-            topPercent = 0;
-          } else if (evStart.getHours() === hour) {
-            topPercent = (evStart.getMinutes() / 60) * 100;
-          } else {
-            // This shouldn't happen with our filtering, but just in case
-            topPercent = 0;
-          }
-
-          if (evEnd.getHours() > hour + 1) {
-            heightPercent = 100 - topPercent;
-          } else if (evEnd.getHours() === hour + 1) {
-            heightPercent = 100 - topPercent;
-            if (evEnd.getMinutes() === 0) {
-              // If it ends exactly at the next hour, fill the entire slot
-              heightPercent = 100 - topPercent;
-            } else {
-              // If it ends within the next hour
-              heightPercent = ((evEnd.getMinutes() / 60) * 100);
-            }
-          } else if (evEnd.getHours() === hour) {
-            // Event starts and ends in the same hour
-            heightPercent = ((evEnd.getMinutes() - evStart.getMinutes()) / 60) * 100;
-          }
-
-          // Ensure minimum height for visibility
-          heightPercent = Math.max(heightPercent, 10);
-
-          item.style.top = `${topPercent}%`;
-          item.style.height = `${heightPercent}%`;
-          
-          item.innerHTML = `<div class="event-title">${ev.title}</div><div class="event-time">${formatTime(ev.start_time)}</div>`;
-          hourCell.appendChild(item);
-        });
-        dayColumn.appendChild(hourCell);
+        hoursContainer.appendChild(hourCell);
       });
       
-      console.log(`Total events for day ${dayDate.toDateString()}: ${totalEventsForDay}`);
+      dayColumn.appendChild(hoursContainer);
+      
+      // Create a container for events
+      const eventsContainer = document.createElement('div');
+      eventsContainer.className = 'events-container';
+      
+      // Filter events for this day
+      const dayEvents = events.filter(ev => {
+        const evStart = new Date(ev.start_time);
+        const evEnd = new Date(ev.end_time);
+        
+        // Set all dates to midnight for date comparison
+        const evStartDay = new Date(evStart);
+        evStartDay.setHours(0, 0, 0, 0);
+        
+        const evEndDay = new Date(evEnd);
+        evEndDay.setHours(0, 0, 0, 0);
+        
+        const currentDayDate = new Date(dayDate);
+        currentDayDate.setHours(0, 0, 0, 0);
+        
+        // Event is on this day if it starts on this day, ends on this day, or spans over this day
+        return (
+          evStartDay.getTime() <= currentDayDate.getTime() && 
+          evEndDay.getTime() >= currentDayDate.getTime()
+        );
+      });
+      
+      console.log(`Found ${dayEvents.length} events for day ${dayDate.toDateString()}`);
+      
+      // Add events as continuous blobs
+      dayEvents.forEach(ev => {
+        const evStart = new Date(ev.start_time);
+        const evEnd = new Date(ev.end_time);
+        
+        // Adjust start and end times if they're not on this day
+        const dayStart = new Date(dayDate);
+        dayStart.setHours(0, 0, 0, 0);
+        
+        const dayEnd = new Date(dayDate);
+        dayEnd.setHours(23, 59, 59, 999);
+        
+        // If event starts before this day, set start time to beginning of day
+        const effectiveStart = evStart < dayStart ? dayStart : evStart;
+        
+        // If event ends after this day, set end time to end of day
+        const effectiveEnd = evEnd > dayEnd ? dayEnd : evEnd;
+        
+        // Calculate position and height
+        const dayHeight = 24 * 60; // 24 hours * 60px per hour
+        const startMinutes = effectiveStart.getHours() * 60 + effectiveStart.getMinutes();
+        const endMinutes = effectiveEnd.getHours() * 60 + effectiveEnd.getMinutes();
+        
+        const topPosition = startMinutes;
+        const height = endMinutes - startMinutes;
+        
+        // Create the event element
+        const eventItem = document.createElement('div');
+        eventItem.className = `event-item priority-${ev.priority || 0}`;
+        eventItem.style.top = `${topPosition}px`;
+        eventItem.style.height = `${height}px`;
+        
+        eventItem.innerHTML = `
+          <div class="event-title">${ev.title}</div>
+          <div class="event-time">${formatTime(ev.start_time)} - ${formatTime(ev.end_time)}</div>
+        `;
+        
+        // Add the event to the events container
+        eventsContainer.appendChild(eventItem);
+      });
+      
+      dayColumn.appendChild(eventsContainer);
+      
       grid.appendChild(dayColumn);
     }
     container.appendChild(grid);
@@ -371,8 +384,8 @@ function renderCalendar(events, view) {
       const currentHour = now.getHours();
       const currentMinute = now.getMinutes();
       
-      // Calculate position in pixels
-      const timePosition = 40 + (currentHour * 60) + (currentMinute);
+      // Calculate position in minutes from the top
+      const timePosition = currentHour * 60 + currentMinute;
       
       const timeLine = document.createElement('div');
       timeLine.className = 'current-time-line';
@@ -381,6 +394,7 @@ function renderCalendar(events, view) {
     }
   }
 }
+
 
 // Helper function to format time
 function formatTime(timeString) {
