@@ -161,6 +161,20 @@ function renderCalendar(events, view) {
   }
 }
 
+// Line which shows current time on calendar (day/week)
+function addCurrentTimeLine(container) {
+  const now = new Date();
+  const hour = now.getHours();
+  const minutes = now.getMinutes();
+
+  const position = (hour * 60 + minutes) * (60 / 60); // 60px per hour
+
+  const line = document.createElement('div');
+  line.className = 'current-time-line';
+  line.style.top = `${position}px`;
+
+  container.appendChild(line);
+}
 
 
 // Helper function to format time
