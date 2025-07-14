@@ -29,6 +29,9 @@ form#eventForm label {
 }
 
 form#eventForm input[type="text"],
+form#eventForm input[type="date"],
+form#eventForm input[type="time"],
+form#eventForm input[type="number"],
 form#eventForm input[type="datetime-local"],
 form#eventForm textarea,
 form#eventForm select {
@@ -39,6 +42,11 @@ form#eventForm select {
   font-size: 1rem;
   box-sizing: border-box;
   transition: border-color 0.3s;
+  
+  /* --- THE FIX --- */
+  /* This tells all form elements to use the same font as the rest of the page. */
+  font-family: inherit;
+  /* --- END FIX --- */
 }
 
 form#eventForm input:focus,
@@ -113,7 +121,7 @@ form#eventForm button[type="submit"]:hover {
   gap: 5px;
 }
 
-/* --- NEW MEGA MENU STYLES --- */
+/* --- MEGA MENU STYLES --- */
 .mega-menu-container {
 position: relative;
 }
@@ -209,4 +217,3 @@ gap: 5px;
 cursor: pointer;
 font-weight: bold;
 }
-/* --- END MEGA MENU STYLES --- */
