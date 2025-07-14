@@ -70,6 +70,48 @@
     <div id="calendarContainer" style="display: none;"></div> <!-- for week/day views only -->
 
   </div>
+
+  <div id="eventModal" class="event-modal">
+    <div class="event-modal-content">
+      <span class="close-modal">×</span>
+      <div class="event-modal-header">
+        <h2 id="eventTitle">Event Title</h2>
+        <div class="event-badge" id="eventPriority">Medium</div>
+      </div>
+      <div class="event-modal-body">
+        <div class="event-time-info">
+          <div id="eventTimeIcon" class="event-icon"><i class="fas fa-clock"></i></div>
+          <div id="eventTimeDetails">
+            <div id="eventDate">July 15, 2025</div>
+            <div id="eventTime">9:00 AM - 10:30 AM</div>
+          </div>
+        </div>
+        
+        <div class="event-recurrence-info" id="eventRecurrenceInfo">
+          <div class="event-icon"><i class="fas fa-repeat"></i></div>
+          <div id="eventRecurrence">Repeats every week</div>
+        </div>
+        
+        <div class="event-description-info">
+          <div class="event-icon"><i class="fas fa-align-left"></i></div>
+          <div id="eventDescription">Event description goes here...</div>
+        </div>
+        
+        <div class="event-metadata">
+          <div class="event-genre" id="eventGenre">Academic</div>
+          <div class="event-tags" id="eventTags">
+            <span class="tag">homework</span>
+            <span class="tag">math</span>
+          </div>
+        </div>
+      </div>
+      <div class="event-modal-footer">
+        <button id="editEventBtn" class="btn btn-primary">Edit</button>
+        <button id="deleteEventBtn" class="btn btn-danger">Delete</button>
+      </div>
+    </div>
+  </div>
+
   <script src="/static/js/dashboard.js"></script>
 </body>
 </html>

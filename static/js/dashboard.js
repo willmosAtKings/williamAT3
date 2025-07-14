@@ -35,9 +35,14 @@ async function loadEventsForCurrentView() {
     let start;
     if (view === 'month') {
       start = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
-    } else {
-      // Create a new Date object to avoid reference issues
+    } else if (view === 'day') {
+      // For day view, the start is the current date.
       start = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate());
+    } else if (view === 'week') {
+      // *** THIS IS THE FIX ***
+      // For week view, the start MUST be the Sunday of that week.
+      start = new Date(currentDate); // Create a copy
+      start.setDate(start.getDate() - start.getDay()); // Go back to Sunday
     }
     
     // Format the date correctly - YYYY-MM-DD
@@ -115,65 +120,7 @@ function renderMonthCalendar(date = new Date(), events = []) {
         
         // Create a new Date object for the clicked day to avoid reference issues
         const clickedDate = new Date(year, month, day);
-        console.log(`Clicked on day: ${clickedDate.toDateString()}`);
-        
-        // Set the current date to this day
-        currentDate = clickedDate;
-        
-        // Switch to day view
-        document.getElementById('calendarView').value = 'day';
-        
-        // Toggle visibility
-        document.querySelector('.calendar-grid').style.display = 'none';
-        document.getElementById('calendarContainer').style.display = 'block';
-        
-        // Update display
-        updateDateDisplay();
-        
-        // Force a new fetch of events specifically for this day
-        (async () => {
-          try {
-            // Format the date correctly - YYYY-MM-DD
-            const startStr = `${clickedDate.getFullYear()}-${String(clickedDate.getMonth() + 1).padStart(2, '0')}-${String(clickedDate.getDate()).padStart(2, '0')}`;
-            console.log(`Fetching events for day view, date: ${clickedDate.toDateString()}, start: ${startStr}`);
-            
-            const response = await fetch(`/api/events?range=day&start=${startStr}`);
-            
-            if (response.ok) {
-              const events = await response.json();
-              console.log(`Received ${events.length} events for day view:`, events);
-              
-              // Filter events for this specific day
-              const dayEvents = events.filter(ev => {
-                const evStart = new Date(ev.start_time);
-                const evEnd = new Date(ev.end_time);
-                
-                // Set all dates to midnight for date comparison
-                const evStartDay = new Date(evStart);
-                evStartDay.setHours(0, 0, 0, 0);
-                
-                const evEndDay = new Date(evEnd);
-                evEndDay.setHours(0, 0, 0, 0);
-                
-                const clickedDay = new Date(clickedDate);
-                clickedDay.setHours(0, 0, 0, 0);
-                
-                // Event is on this day if it starts on this day, ends on this day, or spans over this day
-                return (
-                  evStartDay.getTime() <= clickedDay.getTime() && 
-                  evEndDay.getTime() >= clickedDay.getTime()
-                );
-              });
-              
-              console.log(`Filtered to ${dayEvents.length} events for ${clickedDate.toDateString()}:`, dayEvents);
-              renderCalendar(dayEvents, 'day');
-            } else {
-              console.error('Failed to load events for day view');
-            }
-          } catch (error) {
-            console.error('Error loading events for day view:', error);
-          }
-        })();
+        navigateToDay(clickedDate);
       }
     });
     
@@ -207,22 +154,25 @@ function renderMonthCalendar(date = new Date(), events = []) {
       end.setHours(0, 0, 0, 0);
       return currentCellDate >= start && currentCellDate <= end;
     });
+    
     dayEvents.forEach(event => {
       const eventDiv = document.createElement('div');
       eventDiv.classList.add('event-item', `priority-${event.priority}`);
       eventDiv.innerHTML = `<div class="event-title">${event.title}</div><div class="event-time">${formatTime(event.start_time)}</div>`;
       
-      // Make sure clicking on events doesn't trigger the cell click
+      // Add click handler to show event details
       eventDiv.addEventListener('click', (e) => {
-        e.stopPropagation();
-        // You can add code here to view/edit the event if desired
+        e.stopPropagation(); // Prevent triggering the cell click
+        showEventDetails(event);
       });
       
       cell.appendChild(eventDiv);
     });
+    
     calendarGrid.appendChild(cell);
   }
 }
+
 
 function renderCalendar(events, view) {
   const container = document.getElementById('calendarContainer');
@@ -257,7 +207,8 @@ function renderCalendar(events, view) {
     }
 
     const now = new Date();
-    console.log(`Current date for rendering: ${currentDate.toDateString()}`);
+    const currentHour = now.getHours(); // Get the current hour
+    console.log(`Current date for rendering: ${currentDate.toDateString()}, Current hour: ${currentHour}`);
 
     for (let i = 0; i < daysToRender; i++) {
       const dayDate = new Date(startDay);
@@ -294,8 +245,11 @@ function renderCalendar(events, view) {
         const hourCell = document.createElement('div');
         hourCell.className = 'hour-cell';
         
-        if (dayDate.toDateString() === now.toDateString() && hour === now.getHours()) {
+        // Check if this is the current hour on the current day
+        const isToday = dayDate.toDateString() === now.toDateString();
+        if (isToday && hour === currentHour) {
             hourCell.classList.add('hour-cell-current');
+            console.log(`Highlighting hour ${hour} as current`);
         }
         
         hoursContainer.appendChild(hourCell);
@@ -367,6 +321,11 @@ function renderCalendar(events, view) {
           <div class="event-time">${formatTime(ev.start_time)} - ${formatTime(ev.end_time)}</div>
         `;
         
+        // Add click handler to show event details
+        eventItem.addEventListener('click', () => {
+          showEventDetails(ev);
+        });
+        
         // Add the event to the events container
         eventsContainer.appendChild(eventItem);
       });
@@ -383,12 +342,10 @@ function renderCalendar(events, view) {
         
         const timeLine = document.createElement('div');
         timeLine.className = 'current-time-line';
-        timeLine.style.top = `${timePosition + 40}px`; // 40px for header
+        timeLine.style.top = `${timePosition}px`;
         
-        // Make sure the line is on top of everything
-        timeLine.style.zIndex = '100';
-        
-        dayColumn.appendChild(timeLine);
+        // Add the line to the events container to ensure it's on top
+        eventsContainer.appendChild(timeLine);
       }
       
       grid.appendChild(dayColumn);
@@ -397,14 +354,11 @@ function renderCalendar(events, view) {
   }
 }
 
+
 // Helper function to format time
 function formatTime(timeString) {
   const date = new Date(timeString);
-  return date.toLocaleTimeString('en-US', {
-    hour: 'numeric',
-    minute: '2-digit',
-    hour12: true
-  });
+  return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
 }
 
 // Event Listeners
@@ -445,3 +399,153 @@ document.addEventListener('DOMContentLoaded', function() {
   updateDateDisplay();
   loadEventsForCurrentView();
 });
+
+// Event modal functionality
+const eventModal = document.getElementById('eventModal');
+const closeModal = document.querySelector('.close-modal');
+
+// Close the modal when clicking the X
+closeModal.addEventListener('click', () => {
+  eventModal.style.display = 'none';
+});
+
+// Close the modal when clicking outside of it
+window.addEventListener('click', (event) => {
+  if (event.target === eventModal) {
+    eventModal.style.display = 'none';
+  }
+});
+
+// Function to format date range for display
+function formatDateRange(startDate, endDate) {
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+  
+  // Check if same day
+  if (start.toDateString() === end.toDateString()) {
+    return start.toLocaleDateString('en-US', { 
+      weekday: 'long', 
+      month: 'long', 
+      day: 'numeric',
+      year: 'numeric'
+    });
+  } else {
+    // Multi-day event
+    return `${start.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })} - ${end.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}`;
+  }
+}
+
+// Function to format recurrence pattern
+function formatRecurrence(recurrence) {
+  if (!recurrence) return '';
+  
+  let pattern = 'Repeats ';
+  
+  switch (recurrence.frequency) {
+    case 'daily':
+      pattern += 'every day';
+      break;
+    case 'weekly':
+      pattern += 'every week';
+      if (recurrence.days && recurrence.days.length > 0) {
+        pattern += ` on ${recurrence.days.join(', ')}`;
+      }
+      break;
+    case 'monthly':
+      pattern += 'every month';
+      if (recurrence.dayOfMonth) {
+        pattern += ` on day ${recurrence.dayOfMonth}`;
+      }
+      break;
+    case 'yearly':
+      pattern += 'every year';
+      break;
+  }
+  
+  if (recurrence.until) {
+    const untilDate = new Date(recurrence.until);
+    pattern += ` until ${untilDate.toLocaleDateString()}`;
+  } else if (recurrence.count) {
+    pattern += ` for ${recurrence.count} occurrences`;
+  }
+  
+  return pattern;
+}
+
+// Function to show event details in modal
+function showEventDetails(event) {
+  // Set event title and priority
+  document.getElementById('eventTitle').textContent = event.title;
+  
+  const priorityBadge = document.getElementById('eventPriority');
+  priorityBadge.textContent = ['Low', 'Medium', 'High'][event.priority] || 'Low';
+  priorityBadge.className = 'event-badge ' + ['low', 'medium', 'high'][event.priority] || 'low';
+  
+  // Set date and time
+  document.getElementById('eventDate').textContent = formatDateRange(event.start_time, event.end_time);
+  
+  const startTime = new Date(event.start_time);
+  const endTime = new Date(event.end_time);
+  document.getElementById('eventTime').textContent = `${formatTime(event.start_time)} - ${formatTime(event.end_time)}`;
+  
+  // Handle recurrence
+  const recurrenceInfo = document.getElementById('eventRecurrenceInfo');
+  if (event.is_recurring && event.recurrence) {
+    recurrenceInfo.style.display = 'flex';
+    document.getElementById('eventRecurrence').textContent = formatRecurrence(event.recurrence);
+  } else {
+    recurrenceInfo.style.display = 'none';
+  }
+  
+  // Set description
+  document.getElementById('eventDescription').textContent = event.description || 'No description provided.';
+  
+  // Set genre
+  document.getElementById('eventGenre').textContent = event.genre || 'No category';
+  
+  // Set tags
+  const tagsContainer = document.getElementById('eventTags');
+  tagsContainer.innerHTML = '';
+  
+  if (event.tags) {
+    let tags = [];
+    if (typeof event.tags === 'string') {
+      tags = event.tags.split(',').map(tag => tag.trim());
+    } else if (Array.isArray(event.tags)) {
+      tags = event.tags;
+    }
+    
+    tags.forEach(tag => {
+      const tagSpan = document.createElement('span');
+      tagSpan.className = 'tag';
+      tagSpan.textContent = tag;
+      tagsContainer.appendChild(tagSpan);
+    });
+  }
+  
+  // Set up edit and delete buttons
+  document.getElementById('editEventBtn').onclick = () => {
+    window.location.href = `/event/edit/${event.id}`;
+  };
+  
+  document.getElementById('deleteEventBtn').onclick = () => {
+    if (confirm('Are you sure you want to delete this event?')) {
+      fetch(`/api/events/${event.id}`, {
+        method: 'DELETE',
+      }).then(response => {
+        if (response.ok) {
+          eventModal.style.display = 'none';
+          loadEventsForCurrentView(); // Refresh the calendar
+        } else {
+          alert('Failed to delete event');
+        }
+      }).catch(error => {
+        console.error('Error deleting event:', error);
+        alert('An error occurred while deleting the event');
+      });
+    }
+  };
+  
+  // Show the modal
+  eventModal.style.display = 'block';
+}
