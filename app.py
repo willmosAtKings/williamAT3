@@ -173,6 +173,7 @@ def create_app():
         return response
 
 
+
     @app.route('/event/create', methods=['GET', 'POST'])
     def create_event():
         # Only teachers can create events
@@ -180,16 +181,16 @@ def create_app():
             return jsonify({'error': 'Unauthorised'}), 403
 
         if request.method == 'GET':
-            return render_template('create_event.html')  # your form page
-
-        # POST expects JSON
-        if not request.is_json:
-            return jsonify({'error': 'Content-Type must be application/json'}), 415
+            return render_template('create_event.html')
 
         # Check CSRF token in headers
         # csrf_token = request.headers.get('X-CSRF-Token')
         # if not csrf_token or csrf_token != session.get('csrf_token'):
         #     return jsonify({'error': 'Invalid CSRF token'}), 403
+
+        # POST expects JSON
+        if not request.is_json:
+            return jsonify({'error': 'Content-Type must be application/json'}), 415
 
         data = request.get_json()
 
@@ -198,12 +199,24 @@ def create_app():
         if not all(data.get(f) for f in required):
             return jsonify({'error': 'Missing required fields'}), 400
 
+        # main start/end times
         try:
             start_dt = datetime.strptime(data['start_time'], "%Y-%m-%dT%H:%M")
             end_dt = datetime.strptime(data['end_time'], "%Y-%m-%dT%H:%M")
         except Exception:
             return jsonify({'error': 'Invalid date format. Use YYYY-MM-DDTHH:MM'}), 400
 
+        # recurring start date (if present)
+        rec_start_dt = None
+        if data.get('event_type') == 'recurring':
+            rec_start_str = data.get('rec_start_date')
+            if rec_start_str:
+                try:
+                    rec_start_dt = datetime.strptime(rec_start_str, "%Y-%m-%d")
+                except Exception:
+                    return jsonify({'error': 'Invalid recurring start date'}), 400
+
+        # Create Event (currently single instance - recurring logic comes later)
         event = Event(
             title=data['title'],
             description=data.get('description', ''),
@@ -219,7 +232,12 @@ def create_app():
         db.session.add(event)
         db.session.commit()
 
+        # Optionally log or return recurring start info
+        if rec_start_dt:
+            print(f"Recurring Start Date: {rec_start_dt.date()}")
+
         return jsonify({'message': 'Event created successfully', 'event_id': event.id}), 200
+
     
 
     @app.route('/profile/info')

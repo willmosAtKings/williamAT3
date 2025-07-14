@@ -56,7 +56,9 @@ document.addEventListener('DOMContentLoaded', () => {
       const multiStart = document.getElementById('multi_start_date');
       const multiEnd = document.getElementById('multi_end_date');
       const recEnds = document.getElementById('rec_ends');
-  
+      const recStart = document.getElementById('rec_start_date');
+
+      if (recStart) recStart.value = selectedDate; // currently the end and start dates are prefilled to the same date
       if (multiStart) multiStart.value = selectedDate;
       if (multiEnd) multiEnd.value = selectedDate;
       if (recEnds) recEnds.value = selectedDate;
