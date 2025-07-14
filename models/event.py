@@ -9,12 +9,9 @@ class Event(db.Model):
     description = db.Column(db.String(300))
 
     priority = db.Column(db.Integer, default=0)  # 0 = low, 1 = medium, 2 = high
-    
-    # The 'genre' column has been removed.
-    
-    tags = db.Column(db.String(100))             # comma-separated or JSON-encoded
+    tags = db.Column(db.String(100))             # comma-separated
 
-    is_public = db.Column(db.Boolean, default=True)
+    # The 'is_public' column has been removed.
 
     # Supports both single-day and multi-day events
     start_time = db.Column(db.DateTime)
@@ -26,4 +23,3 @@ class Event(db.Model):
 
     # Link to the creator (teacher/admin)
     creator_id = db.Column(db.Integer, db.ForeignKey('users.id'))
-
