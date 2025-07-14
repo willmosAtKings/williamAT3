@@ -119,21 +119,33 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!response.ok) {
                 throw new Error('Could not fetch event data.');
             }
-            const event = await response.json();
-
+            const eventData = await response.json(); // Changed from 'event' to 'eventData'
+    
             // Populate simple fields
-            document.getElementById('title').value = event.title;
-            document.getElementById('description').value = event.description;
-            document.getElementById('priority').value = event.priority;
-
+            document.getElementById('title').value = eventData.title;
+            document.getElementById('description').value = eventData.description;
+            document.getElementById('priority').value = eventData.priority;
+    
             // Populate datetime-local inputs (requires formatting)
-            // The 'T' is part of the required format. slice(0, 16) gets YYYY-MM-DDTHH:MM
-            document.getElementById('start_time').value = event.start_time.slice(0, 16);
-            document.getElementById('end_time').value = event.end_time.slice(0, 16);
-
+            document.getElementById('start_time').value = eventData.start_time.slice(0, 16);
+            document.getElementById('end_time').value = eventData.end_time.slice(0, 16);
+    
+            // Handle recurring events
+            if (eventData.is_recurring) {
+                document.getElementById('recurring-options').style.display = 'block';
+                
+                // Add the exception date to the form data
+                const exceptionDate = new Date(eventData.start_time).toISOString().split('T')[0];
+                const hiddenInput = document.createElement('input');
+                hiddenInput.type = 'hidden';
+                hiddenInput.id = 'exception_date';
+                hiddenInput.value = exceptionDate;
+                form.appendChild(hiddenInput);
+            }
+    
             // Populate tags
-            if (event.tags && userRole !== 'student') {
-                const tags = event.tags.split(',').map(t => t.trim()).filter(Boolean);
+            if (eventData.tags && userRole !== 'student') {
+                const tags = eventData.tags.split(',').map(t => t.trim()).filter(Boolean);
                 selectedTags = new Set(tags);
                 updateSelectedTagsDisplay();
                 // Highlight selected tags in the dropdown
@@ -142,13 +154,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (tagEl) tagEl.classList.add('selected');
                 });
             }
-
+    
         } catch (error) {
             console.error("Error:", error);
             alert(error.message);
             window.location.href = '/dashboard';
         }
     }
+    
 
     // --- FORM SUBMISSION ---
     form.addEventListener('submit', async (e) => {
@@ -162,6 +175,11 @@ document.addEventListener('DOMContentLoaded', () => {
             end_time: document.getElementById('end_time').value,
             tags: selectedTagsInput ? selectedTagsInput.value : ''
         };
+
+        if (document.getElementById('recurring-options').style.display !== 'none') {
+            payload.edit_scope = document.querySelector('input[name="edit-scope"]:checked').value;
+            payload.exception_date = document.getElementById('exception_date').value;
+        }
 
         try {
             const response = await fetch(`/api/event/${eventId}`, {
