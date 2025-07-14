@@ -99,7 +99,6 @@ function renderMonthCalendar(date = new Date(), events = []) {
   const totalDays = new Date(year, month + 1, 0).getDate();
   const firstDayOfMonth = new Date(year, month, 1).getDay();
 
-
   for (let day = 1; day <= totalDays; day++) {
     const cell = document.createElement('div');
     cell.classList.add('day-cell');
@@ -167,16 +166,6 @@ function renderCalendar(events, view) {
     // Display the selected date
     const selectedDay = currentDate.toDateString();
     const hours = [...Array(24).keys()];
-
-    // We don't need this date header anymore since it's in the navbar
-    // const dateHeader = document.createElement('h3');
-    // dateHeader.textContent = currentDate.toLocaleDateString('en-US', {
-    //   weekday: 'long',
-    //   year: 'numeric',
-    //   month: 'long',
-    //   day: 'numeric'
-    // });
-    // container.appendChild(dateHeader);
 
     const grid = document.createElement('div');
     grid.className = 'timeline-grid';
