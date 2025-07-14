@@ -218,7 +218,13 @@ function renderCalendar(events, view) {
           item.style.top = `${minutesOffset}px`;
           
           // Calculate duration in minutes (capped to this hour if spanning multiple)
-          const endMinute = evEnd.getHours() > hour ? 59 : evEnd.getMinutes();
+          let endMinute = evEnd.getHours() > hour ? 59 : evEnd.getMinutes();
+          
+          // Fix for events ending exactly at the top of the next hour (e.g., 3:00 PM)
+          if (evEnd.getHours() === hour + 1 && evEnd.getMinutes() === 0) {
+            endMinute = 59; // Fill the entire hour
+          }
+          
           const duration = endMinute - minutesOffset;
           
           // Set minimum height for very short events
@@ -227,6 +233,13 @@ function renderCalendar(events, view) {
           // Event spans this entire hour
           item.style.top = '0px';
           item.style.height = '59px';
+        } else if (evStart.getHours() < hour && evEnd.getHours() === hour) {
+          // Event ends in this hour
+          item.style.top = '0px';
+          
+          // If event ends exactly at the top of the hour (e.g., 3:00), fill the entire previous hour
+          const endMinute = evEnd.getMinutes() === 0 ? 59 : evEnd.getMinutes();
+          item.style.height = `${endMinute}px`;
         }
         
         item.innerHTML = `
@@ -235,6 +248,7 @@ function renderCalendar(events, view) {
         `;
         slot.appendChild(item);
       });
+
 
       timeSlots.appendChild(slot);
     });
@@ -341,7 +355,13 @@ function renderCalendar(events, view) {
             eventItem.style.top = `${minutesOffset}px`;
             
             // Calculate duration in minutes (capped to this hour if spanning multiple)
-            const endMinute = evEnd.getHours() > hour ? 59 : evEnd.getMinutes();
+            let endMinute = evEnd.getHours() > hour ? 59 : evEnd.getMinutes();
+            
+            // Fix for events ending exactly at the top of the next hour (e.g., 3:00 PM)
+            if (evEnd.getHours() === hour + 1 && evEnd.getMinutes() === 0) {
+              endMinute = 59; // Fill the entire hour
+            }
+            
             const duration = endMinute - minutesOffset;
             
             // Set minimum height for very short events
@@ -350,6 +370,13 @@ function renderCalendar(events, view) {
             // Event spans this entire hour
             eventItem.style.top = '0px';
             eventItem.style.height = '59px';
+          } else if (evStart.getHours() < hour && evEnd.getHours() === hour) {
+            // Event ends in this hour
+            eventItem.style.top = '0px';
+            
+            // If event ends exactly at the top of the hour (e.g., 3:00), fill the entire previous hour
+            const endMinute = evEnd.getMinutes() === 0 ? 59 : evEnd.getMinutes();
+            eventItem.style.height = `${endMinute}px`;
           }
           
           eventItem.innerHTML = `
@@ -358,6 +385,7 @@ function renderCalendar(events, view) {
           `;
           hourCell.appendChild(eventItem);
         });
+
         
         dayColumn.appendChild(hourCell);
       });

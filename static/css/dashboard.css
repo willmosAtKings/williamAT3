@@ -167,8 +167,8 @@ html, body {
 /* ===== CALENDAR GRID ===== */
 .calendar-container {
   flex: 1;
-  padding: 15px 1rem 1rem; /* Added top padding */
-  margin-top: 10px; /* Added top margin */
+  padding: 5px 1rem 1rem; /* Reduced top padding */
+  margin-top: 5px; /* Reduced top margin */
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -328,92 +328,96 @@ html, body {
 
 /* ===== CALENDAR VIEW TYPE =====*/
 #calendarContainer {
-  display: flex;
-  gap: 1rem;
-  flex-wrap: wrap;
-  padding-top: 15px; /* Same as calendar-container */
-  margin-top: 10px; /* Same as calendar-container */
-  max-height: calc(100vh - 200px);
-  overflow-y: auto;
+  padding: 0px;
+  margin-top: 0px;
+  height: auto;
+  max-height: calc(100vh - 80px);
+  overflow-y: scroll;
   position: relative;
-  flex: 1;
-  box-sizing: border-box;
+  width: 100%;
 }
 
-.day-column, .hour-slot {
-  border: 1px solid #ccc;
-  padding: 0.5rem;
-  flex: 1;
-  min-width: 100px;
-}
-
-.event {
-  background: #e0f7fa;
-  margin: 2px 0;
-  padding: 2px 4px;
-  border-radius: 4px;
-}
-
-/* Day and week layout */
-.timeline-grid {
+/* Common styles for day and week views */
+.timeline-grid,
+.week-grid {
   display: grid;
-  grid-template-columns: 60px 1fr; /* hour column + main area */
   width: 100%;
   border: 1px solid #ddd;
   height: fit-content;
-  margin-top: 0;
-  margin-bottom: 20px;
+  box-sizing: border-box;
+  position: relative;
 }
 
-.hour-labels {
+.timeline-grid {
+  grid-template-columns: 60px 1fr; /* hour column + main area */
+}
+
+.week-grid {
+  grid-template-columns: 60px repeat(7, 1fr);
+}
+
+/* Hour labels styling - common for day and week */
+.hour-labels,
+.week-time-column {
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  padding-right: 5px;
-  font-size: 0.85rem;
-  color: #444;
-  border-right: 1px solid #ddd;
   background-color: #f9f9f9;
+  border-right: 1px solid #ddd;
+  z-index: 5;
 }
 
-.hour-labels div {
+.hour-labels div,
+.week-hour-label {
   height: 60px;
   border-bottom: 1px solid #ddd;
   width: 100%;
-  padding: 5px;
+  padding: 0;
   text-align: right;
   font-size: 0.8rem;
+  color: #666;
   display: flex;
   align-items: flex-start;
   justify-content: flex-end;
+  box-sizing: border-box;
+  padding-right: 8px;
+  padding-top: 5px;
 }
 
-.time-slots {
+/* Time slots styling - common for day and week */
+.time-slots,
+.week-day-column {
   display: flex;
   flex-direction: column;
   flex-grow: 1;
+  border-right: 1px solid #eee;
+  min-width: 0;
 }
 
-.hour-slot {
+.hour-slot,
+.week-hour-cell {
   position: relative;
   height: 60px;
   border-bottom: 1px solid #eee;
-  padding: 2px;
+  padding: 0;
+  box-sizing: border-box;
 }
 
-/* Current time indicator */
-.current-time-line {
+/* Current time indicator - common for day and week */
+.current-time-line,
+.week-current-time-line {
   position: absolute;
-  left: 0;
-  right: 0;
   height: 2px;
   background-color: red;
   z-index: 10;
+  width: 100%;
+  left: 0;
 }
 
-/* Event styling in day view */
-#calendarContainer .event-item {
-  position: relative;
+/* Event styling - common for day and week */
+#calendarContainer .event-item,
+.week-hour-cell .event-item {
+  position: absolute;
   margin: 1px 0;
   padding: 2px 5px;
   border-radius: 4px;
@@ -421,16 +425,38 @@ html, body {
   overflow: hidden;
   background-color: #e3f2fd;
   border-left: 3px solid #2196f3;
+  left: 2px;
+  right: 2px;
+  box-sizing: border-box;
+  width: calc(100% - 6px);
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-#calendarContainer .priority-1 {
-  background-color: #fff8e1;
-  border-left-color: #ffc107;
+/* Week view specific styles */
+.week-header {
+  height: 40px;
+  padding: 5px;
+  text-align: center;
+  background-color: #f5f5f5;
+  border-bottom: 1px solid #ddd;
+  font-weight: bold;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 
-#calendarContainer .priority-2 {
-  background-color: #ffebee;
-  border-left-color: #f44336;
+.week-header.today {
+  background-color: #e3f2fd;
+  color: #1976d2;
+}
+
+.week-day-name {
+  font-size: 0.8rem;
+}
+
+.week-day-number {
+  font-size: 1rem;
 }
 
 /* Date navigation container */
@@ -489,31 +515,8 @@ html, body {
   display: none;
 }
 
-/* Week view styling */
-.week-grid {
-  display: grid;
-  grid-template-columns: 60px repeat(7, 1fr);
-  width: 100%;
-  border: 1px solid #ddd;
-  height: fit-content;
-  margin-top: 0;
-  margin-bottom: 20px;
-}
-
-.week-time-column {
-  background-color: #f9f9f9;
-  border-right: 1px solid #ddd;
-}
-
-.week-day-column {
-  border-right: 1px solid #eee;
-}
-
-.week-day-column:last-child {
-  border-right: none;
-}
-
-.week-header {
+/* Day view header to match week view */
+.timeline-header {
   height: 40px;
   padding: 5px;
   text-align: center;
@@ -525,54 +528,7 @@ html, body {
   justify-content: center;
 }
 
-.week-header.today {
+.timeline-header.today {
   background-color: #e3f2fd;
   color: #1976d2;
-}
-
-.week-day-name {
-  font-size: 0.8rem;
-}
-
-.week-day-number {
-  font-size: 1rem;
-}
-
-.week-hour-label {
-  height: 60px;
-  padding: 5px;
-  text-align: right;
-  border-bottom: 1px solid #ddd;
-  font-size: 0.8rem;
-  color: #666;
-  display: flex;
-  align-items: flex-start;
-  justify-content: flex-end;
-}
-
-.week-hour-cell {
-  height: 60px;
-  border-bottom: 1px solid #eee;
-  position: relative;
-}
-
-.week-current-time-line {
-  position: absolute;
-  height: 2px;
-  background-color: red;
-  z-index: 10;
-}
-
-/* Make sure events in week view don't overflow their cells */
-.week-hour-cell .event-item {
-  position: absolute;
-  width: calc(100% - 6px);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-/* Remove any extra padding that might be causing whitespace */
-#calendarContainer > * {
-  margin-top: 0;
 }
