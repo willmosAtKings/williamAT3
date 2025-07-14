@@ -20,24 +20,24 @@ def create_app():
         from models.event import Event
         from models.user import User
 
-    # ... (other routes are correct and remain the same) ...
-    @app.route('/')
-    def index():
-        return render_template('login.html')
-
     @app.route("/dashboard", methods=["GET", "POST"])
     def dashboard():
-        if request.method == "POST":
-            return redirect(url_for("dashboard"))
+        if 'user_id' not in session:
+            return redirect(url_for('login'))
+            
+        from models.user import User
+        user = db.session.get(User, session['user_id'])
+        if not user:
+            session.clear()
+            return redirect(url_for('login'))
 
-        user_email = None
-        if 'user_id' in session:
-            from models.user import User
-            user = db.session.get(User, session['user_id'])
-            if user:
-                user_email = user.email
-
-        return render_template("dashboard.html", user_email=user_email)
+        # Pass user info to the template for the frontend JS to use
+        return render_template(
+            "dashboard.html", 
+            user_email=user.email, 
+            user_id=user.id, 
+            user_role=user.role
+        )
  
     @app.route('/login', methods=['POST', 'GET'])
     def login():
@@ -139,14 +139,12 @@ def create_app():
             except Exception as e:
                 return jsonify({'error': f'Invalid recurring event format: {str(e)}'}), 400
 
-            # --- NEW VALIDATION LOGIC ---
             if end_date < start_date:
                 return jsonify({'error': 'End date cannot be before the start date.'}), 400
             
             limit_date = start_date + relativedelta(years=2)
             if end_date > limit_date:
                 return jsonify({'error': 'Recurring events cannot extend more than 2 years.'}), 400
-            # --- END VALIDATION ---
 
             weekday_map = ['MO', 'TU', 'WE', 'TH', 'FR', 'SA', 'SU']
             current = start_date
@@ -188,10 +186,8 @@ def create_app():
             except Exception:
                 return jsonify({'error': 'Invalid date format. Use YYYY-MM-DDTHH:MM'}), 400
 
-            # --- NEW VALIDATION LOGIC ---
             if end_dt <= start_dt:
                 return jsonify({'error': 'End time must be after the start time.'}), 400
-            # --- END VALIDATION ---
 
             event = Event(
                 title=data['title'],
@@ -206,7 +202,99 @@ def create_app():
             db.session.commit()
             return jsonify({'message': 'Event created successfully', 'event_id': event.id}), 200
 
-    # ... (profile and API routes are correct and remain the same) ...
+    @app.route('/event/edit/<int:event_id>', methods=['GET'])
+    def edit_event_page(event_id):
+        from models.event import Event
+        from models.user import User
+        
+        if 'user_id' not in session:
+            return redirect(url_for('login'))
+            
+        user = db.session.get(User, session['user_id'])
+        event = db.session.get(Event, event_id)
+        
+        if not event:
+            flash('Event not found.', 'error')
+            return redirect(url_for('dashboard'))
+
+        # Permission check logic
+        can_edit = False
+        if user.role == 'admin':
+            can_edit = True
+        elif user.role == 'teacher' and event.creator.role != 'student':
+            can_edit = True
+        elif user.role == 'student' and event.creator_id == user.id:
+            can_edit = True
+        
+        if not can_edit:
+            flash('You do not have permission to edit this event.', 'error')
+            return redirect(url_for('dashboard'))
+            
+        return render_template('edit_event.html', event_id=event_id, user_role=user.role)
+
+    @app.route('/api/event/<int:event_id>', methods=['GET', 'POST'])
+    def handle_event(event_id):
+        from models.event import Event
+        from models.user import User
+        
+        if 'user_id' not in session:
+            return jsonify({'error': 'Unauthorized'}), 401
+            
+        user = db.session.get(User, session['user_id'])
+        event = db.session.get(Event, event_id)
+        
+        if not event:
+            return jsonify({'error': 'Event not found'}), 404
+            
+        # Permission check logic
+        can_edit = False
+        if user.role == 'admin':
+            can_edit = True
+        elif user.role == 'teacher' and event.creator.role != 'student':
+            can_edit = True
+        elif user.role == 'student' and event.creator_id == user.id:
+            can_edit = True
+
+        if not can_edit:
+            return jsonify({'error': 'Forbidden'}), 403
+
+        if request.method == 'GET':
+            return jsonify({
+                'id': event.id,
+                'title': event.title,
+                'description': event.description,
+                'priority': event.priority,
+                'tags': event.tags,
+                'start_time': event.start_time.isoformat(),
+                'end_time': event.end_time.isoformat(),
+            })
+
+        if request.method == 'POST':
+            data = request.get_json()
+            if not data:
+                return jsonify({'error': 'Invalid JSON'}), 400
+
+            event.title = data.get('title', event.title)
+            event.description = data.get('description', event.description)
+            event.priority = data.get('priority', event.priority)
+            
+            if user.role in ['teacher', 'admin']:
+                event.tags = data.get('tags', event.tags)
+            else:
+                event.tags = ''
+
+            try:
+                event.start_time = datetime.fromisoformat(data['start_time'])
+                event.end_time = datetime.fromisoformat(data['end_time'])
+            except (KeyError, ValueError):
+                return jsonify({'error': 'Invalid or missing date format'}), 400
+
+            if event.end_time <= event.start_time:
+                return jsonify({'error': 'End time must be after the start time.'}), 400
+
+            db.session.commit()
+            return jsonify({'message': 'Event updated successfully!'})
+
     @app.route('/profile/info')
     def profile():
         user_id = session.get('user_id')
@@ -306,7 +394,8 @@ def create_app():
                 'tags': e.tags,
                 'start_time': e.start_time.isoformat(),
                 'end_time': e.end_time.isoformat(),
-                'creator_id': e.creator_id
+                'creator_id': e.creator_id,
+                'creator_role': e.creator.role # Add the creator's role to the payload
             } for e in events
         ])
 
