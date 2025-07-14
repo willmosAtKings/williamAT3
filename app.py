@@ -18,15 +18,12 @@ def create_app():
     db.init_app(app)
 
     # --- 2. INITIALIZE MIGRATE ---
-    # This connects the migration commands to your app and database
     migrate = Migrate(app, db)
 
     with app.app_context():
         from models.event import Event
         from models.user import User
-        # db.create_all() # It's often better to let migrations handle table creation
-
-    # ... (the rest of your app.py file remains exactly the same) ...
+        # db.create_all() # Migrations will handle this
 
     @app.route('/')
     def index():
@@ -220,17 +217,31 @@ def create_app():
         if not user:
             return jsonify({'error': 'User not found'}), 401
 
+        # --- THIS IS THE FIX ---
         if user.role == 'admin':
+            # Admins see all events, no filtering needed.
             query = Event.query
         else:
+            # For other users, build a filter based ONLY on their tags.
             user_tags = user.tags
-            filter_conditions = [
-                Event.creator_id == user.id
-            ]
+            
+            # This will hold the conditions for our query.
+            filter_conditions = []
+            
+            # For each tag the user has...
             if user_tags:
                 for tag in user_tags:
+                    # ...add a condition to find events that contain that tag.
                     filter_conditions.append(Event.tags.like(f'%{tag}%'))
-            query = Event.query.filter(or_(*filter_conditions))
+            
+            # If a user has no valid tags, they can't see any tagged events.
+            # We create a query that will only return events if the conditions list is not empty.
+            if filter_conditions:
+                query = Event.query.filter(or_(*filter_conditions))
+            else:
+                # If there are no conditions, create a query that returns nothing.
+                query = Event.query.filter(False)
+        # --- END OF FIX ---
 
         range_type = request.args.get('range', 'month')
         start_str = request.args.get('start') or request.args.get('date')
