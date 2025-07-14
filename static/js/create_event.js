@@ -6,8 +6,6 @@ document.addEventListener('DOMContentLoaded', () => {
     "Audience": ["public", "student", "teacher", "admin"],
     "Year Level": ["year-7", "year-8", "year-9", "year-10", "year-11", "year-12"],
     "Activity Type": ["sport", "academic", "co-curricular", "assembly", "excursion"],
-    // You can easily add more categories and tags here in the future
-    // "Departments": ["math", "science", "english"], 
   };
 
   const megaMenuDropdown = document.getElementById('mega-menu-dropdown');
@@ -16,20 +14,16 @@ document.addEventListener('DOMContentLoaded', () => {
   const selectedTagsDisplay = document.getElementById('selected-tags-display');
   let selectedTags = new Set();
 
-  // Function to build the mega menu HTML from the data structure
   function buildMegaMenu() {
     megaMenuDropdown.innerHTML = '';
     for (const category in tagStructure) {
       const categoryDiv = document.createElement('div');
       categoryDiv.className = 'mega-menu-category';
-      
       const categoryTitle = document.createElement('h4');
       categoryTitle.textContent = category;
       categoryDiv.appendChild(categoryTitle);
-      
       const tagsContainer = document.createElement('div');
       tagsContainer.className = 'mega-menu-tags';
-      
       tagStructure[category].forEach(tag => {
         const tagEl = document.createElement('div');
         tagEl.className = 'mega-menu-tag';
@@ -37,13 +31,11 @@ document.addEventListener('DOMContentLoaded', () => {
         tagEl.dataset.tag = tag;
         tagsContainer.appendChild(tagEl);
       });
-      
       categoryDiv.appendChild(tagsContainer);
       megaMenuDropdown.appendChild(categoryDiv);
     }
   }
 
-  // Function to update the display of selected tags (the "pills")
   function updateSelectedTagsDisplay() {
     selectedTagsDisplay.innerHTML = '';
     selectedTags.forEach(tag => {
@@ -52,16 +44,13 @@ document.addEventListener('DOMContentLoaded', () => {
       pill.innerHTML = `<span>${tag}</span><span class="remove-tag" data-tag="${tag}">×</span>`;
       selectedTagsDisplay.appendChild(pill);
     });
-    // Update the hidden input that will be sent with the form
     selectedTagsInput.value = Array.from(selectedTags).join(',');
   }
 
-  // Event Listener: Show/hide mega menu
   tagSelectorButton.addEventListener('click', () => {
     megaMenuDropdown.classList.toggle('show');
   });
 
-  // Event Listener: Handle tag selection/deselection from the dropdown
   megaMenuDropdown.addEventListener('click', (e) => {
     if (e.target.classList.contains('mega-menu-tag')) {
       const tag = e.target.dataset.tag;
@@ -76,13 +65,11 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // Event Listener: Handle tag removal by clicking the 'x' on a pill
   selectedTagsDisplay.addEventListener('click', (e) => {
     if (e.target.classList.contains('remove-tag')) {
       const tag = e.target.dataset.tag;
       selectedTags.delete(tag);
       updateSelectedTagsDisplay();
-      // Also un-highlight the tag in the main dropdown for visual consistency
       const tagInMenu = megaMenuDropdown.querySelector(`.mega-menu-tag[data-tag="${tag}"]`);
       if (tagInMenu) {
         tagInMenu.classList.remove('selected');
@@ -90,19 +77,15 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // Event Listener: Close mega menu if clicking anywhere else on the page
   window.addEventListener('click', (e) => {
     if (!e.target.closest('.mega-menu-container')) {
       megaMenuDropdown.classList.remove('show');
     }
   });
 
-  // Initialize the menu when the page loads
   buildMegaMenu();
   // --- END MEGA MENU SETUP ---
 
-
-  // --- EXISTING LOGIC (PRESERVED) ---
   const urlParams = new URLSearchParams(window.location.search);
   const dateFromUrl = urlParams.get('date');
   const displayDateEl = document.getElementById('displayDate');
@@ -181,7 +164,6 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('multi_start_date')?.addEventListener('change', updateDisplayDate);
   document.getElementById('rec_start_date')?.addEventListener('change', updateDisplayDate);
 
-  // --- MODIFIED FORM SUBMISSION ---
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
 
@@ -189,8 +171,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const title = document.getElementById('title').value.trim();
     const description = document.getElementById('description').value.trim();
     const priority = document.getElementById('priority').value;
-    const tags = document.getElementById('selected-tags-input').value; // MODIFIED: Get tags from hidden input
-    const isPublic = document.getElementById('is_public').checked;
+    const tags = document.getElementById('selected-tags-input').value;
+    
+    // REMOVED: const isPublic = document.getElementById('is_public').checked;
 
     let startTimeStr = null;
     let endTimeStr = null;
@@ -251,9 +234,8 @@ document.addEventListener('DOMContentLoaded', () => {
         title,
         description,
         priority: parseInt(priority),
-        // REMOVED: genre,
-        tags, // MODIFIED: Now uses the value from the hidden input
-        is_public: isPublic,
+        tags,
+        // REMOVED: is_public: isPublic,
         start_time: startTimeStr,
         end_time: endTimeStr,
       };
