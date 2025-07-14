@@ -13,32 +13,16 @@ function updateDateDisplay() {
   const dateDisplay = document.getElementById('currentDateDisplay');
   
   if (view === 'month') {
-    // Show month and year for month view
-    dateDisplay.textContent = currentDate.toLocaleString('default', {
-      month: 'long',
-      year: 'numeric'
-    });
+    dateDisplay.textContent = currentDate.toLocaleString('default', { month: 'long', year: 'numeric' });
   } else if (view === 'week') {
-    // Show week range for week view
     const weekStart = new Date(currentDate);
     weekStart.setDate(currentDate.getDate() - currentDate.getDay());
-    
     const weekEnd = new Date(weekStart);
     weekEnd.setDate(weekStart.getDate() + 6);
-    
     const formatOptions = { month: 'short', day: 'numeric' };
-    const startStr = weekStart.toLocaleDateString('en-US', formatOptions);
-    const endStr = weekEnd.toLocaleDateString('en-US', formatOptions);
-    
-    dateDisplay.textContent = `${startStr} - ${endStr}, ${currentDate.getFullYear()}`;
+    dateDisplay.textContent = `${weekStart.toLocaleDateString('en-US', formatOptions)} - ${weekEnd.toLocaleDateString('en-US', formatOptions)}, ${currentDate.getFullYear()}`;
   } else if (view === 'day') {
-    // Show full date for day view
-    dateDisplay.textContent = currentDate.toLocaleDateString('en-US', {
-      weekday: 'long',
-      month: 'long',
-      day: 'numeric',
-      year: 'numeric'
-    });
+    dateDisplay.textContent = currentDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
   }
 }
 
@@ -49,10 +33,8 @@ async function loadEventsForCurrentView() {
   try {
     let start;
     if (view === 'month') {
-      // First day of month for month view
       start = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
     } else {
-      // Current date for day/week view
       start = new Date(currentDate);
     }
     
@@ -61,14 +43,11 @@ async function loadEventsForCurrentView() {
     
     if (response.ok) {
       const events = await response.json();
-      
       if (view === 'month') {
         renderMonthCalendar(currentDate, events);
       } else {
         renderCalendar(events, view);
       }
-      
-      // Update the date display after rendering
       updateDateDisplay();
     } else {
       console.error('Failed to load events');
@@ -79,13 +58,10 @@ async function loadEventsForCurrentView() {
 }
 
 function renderMonthCalendar(date = new Date(), events = []) {
+  // ... (This function remains unchanged)
   console.log('render MonthCalendar called');
   const calendarGrid = document.querySelector('.calendar-grid');
-
-  // Clear all children (headers + days)
   calendarGrid.innerHTML = '';
-
-  // Re-add weekday headers
   const headers = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
   for (const day of headers) {
     const header = document.createElement('div');
@@ -93,48 +69,35 @@ function renderMonthCalendar(date = new Date(), events = []) {
     header.textContent = day;
     calendarGrid.appendChild(header);
   }
-
   const year = date.getFullYear();
   const month = date.getMonth();
   const totalDays = new Date(year, month + 1, 0).getDate();
   const firstDayOfMonth = new Date(year, month, 1).getDay();
-
   for (let day = 1; day <= totalDays; day++) {
     const cell = document.createElement('div');
     cell.classList.add('day-cell');
-
     const dayOfWeek = (firstDayOfMonth + day - 1) % 7;
     const weekNumber = Math.floor((firstDayOfMonth + day - 1) / 7);
-
     cell.style.gridColumn = dayOfWeek + 1;
     cell.style.gridRow = weekNumber + 2;
-
     const dayNum = document.createElement('div');
     dayNum.classList.add('day-number');
     dayNum.textContent = day;
-
     const addBtn = document.createElement('button');
     addBtn.textContent = '+';
     addBtn.classList.add('add-event-btn');
     addBtn.onclick = () => {
       const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-    
       if (window.location.pathname === '/event/create') {
-        // Already on create_event page — just update the date
         window.dispatchEvent(new CustomEvent('changeCreateEventDate', { detail: dateStr }));
       } else {
-        // Navigate to create_event page with date in query param
         window.location.href = `/event/create?date=${dateStr}`;
       }
     };
-    
-
     cell.appendChild(dayNum);
     cell.appendChild(addBtn);
-
     const currentCellDate = new Date(year, month, day);
     currentCellDate.setHours(0, 0, 0, 0);
-    
     const dayEvents = events.filter(ev => {
       const start = new Date(ev.start_time);
       const end = new Date(ev.end_time);
@@ -142,314 +105,126 @@ function renderMonthCalendar(date = new Date(), events = []) {
       end.setHours(0, 0, 0, 0);
       return currentCellDate >= start && currentCellDate <= end;
     });
-    
-
     dayEvents.forEach(event => {
       const eventDiv = document.createElement('div');
       eventDiv.classList.add('event-item', `priority-${event.priority}`);
-      eventDiv.innerHTML = `
-        <div class="event-title">${event.title}</div>
-        <div class="event-time">${formatTime(event.start_time)}</div>
-      `;
+      eventDiv.innerHTML = `<div class="event-title">${event.title}</div><div class="event-time">${formatTime(event.start_time)}</div>`;
       cell.appendChild(eventDiv);
     });
-
     calendarGrid.appendChild(cell);
   }
 }
-
+  
 function renderCalendar(events, view) {
   const container = document.getElementById('calendarContainer');
   container.innerHTML = '';
 
-  if (view === 'day') {
-    // Display the selected date
-    const selectedDay = currentDate.toDateString();
+  if (view === 'day' || view === 'week') {
     const hours = [...Array(24).keys()];
-
     const grid = document.createElement('div');
-    grid.className = 'timeline-grid';
+    grid.className = view === 'day' ? 'timeline-grid' : 'week-grid';
 
-    const hourLabels = document.createElement('div');
-    hourLabels.className = 'hour-labels';
-
-    const timeSlots = document.createElement('div');
-    timeSlots.className = 'time-slots';
-
-    hours.forEach(hour => {
-      const label = document.createElement('div');
-      label.textContent = `${hour.toString().padStart(2, '0')}:00`;
-      hourLabels.appendChild(label);
-
-      const slot = document.createElement('div');
-      slot.className = 'hour-slot';
-
-      // Add events that match this hour or span across it
-      const matching = events.filter(ev => {
-        const evStart = new Date(ev.start_time);
-        const evEnd = new Date(ev.end_time);
-        
-        // Check if event is on the selected day
-        if (evStart.toDateString() !== selectedDay && evEnd.toDateString() !== selectedDay) {
-          return false;
-        }
-        
-        // Check if event starts or spans this hour
-        const hourStart = new Date(currentDate);
-        hourStart.setHours(hour, 0, 0, 0);
-        
-        const hourEnd = new Date(currentDate);
-        hourEnd.setHours(hour, 59, 59, 999);
-        
-        return (evStart <= hourEnd && evEnd >= hourStart);
-      });
-
-      matching.forEach(ev => {
-        const evStart = new Date(ev.start_time);
-        const evEnd = new Date(ev.end_time);
-        
-        const item = document.createElement('div');
-        item.className = `event-item priority-${ev.priority || 0}`;
-        
-        // Calculate position and height based on start/end times
-        if (evStart.getHours() === hour) {
-          // Event starts in this hour
-          const minutesOffset = evStart.getMinutes();
-          item.style.top = `${minutesOffset}px`;
-          
-          // Calculate duration in minutes (capped to this hour if spanning multiple)
-          let endMinute = evEnd.getHours() > hour ? 59 : evEnd.getMinutes();
-          
-          // Fix for events ending exactly at the top of the next hour (e.g., 3:00 PM)
-          if (evEnd.getHours() === hour + 1 && evEnd.getMinutes() === 0) {
-            endMinute = 59; // Fill the entire hour
-          }
-          
-          const duration = endMinute - minutesOffset;
-          
-          // Set minimum height for very short events
-          item.style.height = `${Math.max(duration, 25)}px`;
-        } else if (evStart.getHours() < hour && evEnd.getHours() > hour) {
-          // Event spans this entire hour
-          item.style.top = '0px';
-          item.style.height = '59px';
-        } else if (evStart.getHours() < hour && evEnd.getHours() === hour) {
-          // Event ends in this hour
-          item.style.top = '0px';
-          
-          // If event ends exactly at the top of the hour (e.g., 3:00), fill the entire previous hour
-          const endMinute = evEnd.getMinutes() === 0 ? 59 : evEnd.getMinutes();
-          item.style.height = `${endMinute}px`;
-        }
-        
-        item.innerHTML = `
-          <div class="event-title">${ev.title}</div>
-          <div class="event-time">${formatTime(ev.start_time)} - ${formatTime(ev.end_time)}</div>
-        `;
-        slot.appendChild(item);
-      });
-
-
-      timeSlots.appendChild(slot);
-    });
-
-    grid.appendChild(hourLabels);
-    grid.appendChild(timeSlots);
-    container.appendChild(grid);
-
-    addCurrentTimeLine(container);
-  } 
-  else if (view === 'week') {
-    const hours = [...Array(24).keys()];
-    
-    // Get the start of the week (Sunday)
-    const weekStart = new Date(currentDate);
-    weekStart.setDate(currentDate.getDate() - currentDate.getDay());
-    
-    // Create the week grid container
-    const weekGrid = document.createElement('div');
-    weekGrid.className = 'week-grid';
-    
     // Create the time column (leftmost column)
     const timeColumn = document.createElement('div');
-    timeColumn.className = 'week-time-column';
-    
-    // Add header to time column
+    timeColumn.className = 'time-column';
     const timeHeader = document.createElement('div');
-    timeHeader.className = 'week-header time-header';
-    timeHeader.innerHTML = ' '; // Empty header for time column
+    timeHeader.className = 'grid-header time-header';
     timeColumn.appendChild(timeHeader);
-    
-    // Add hour labels to time column
     hours.forEach(hour => {
       const hourLabel = document.createElement('div');
-      hourLabel.className = 'week-hour-label';
+      hourLabel.className = 'hour-label';
       hourLabel.textContent = `${hour.toString().padStart(2, '0')}:00`;
       timeColumn.appendChild(hourLabel);
     });
-    
-    weekGrid.appendChild(timeColumn);
-    
-    // Create day columns
-    for (let i = 0; i < 7; i++) {
-      const dayDate = new Date(weekStart);
-      dayDate.setDate(weekStart.getDate() + i);
+    grid.appendChild(timeColumn);
+
+    // Determine loop for days (1 for day view, 7 for week view)
+    const daysToRender = view === 'day' ? 1 : 7;
+    const startDay = view === 'day' ? currentDate : new Date(currentDate.setDate(currentDate.getDate() - currentDate.getDay()));
+
+    for (let i = 0; i < daysToRender; i++) {
+      const dayDate = new Date(startDay);
+      dayDate.setDate(startDay.getDate() + i);
       
       const dayColumn = document.createElement('div');
-      dayColumn.className = 'week-day-column';
+      dayColumn.className = 'day-column';
       
-      // Add day header
       const dayHeader = document.createElement('div');
-      dayHeader.className = 'week-header';
-      
-      // Check if this is today
-      const isToday = dayDate.toDateString() === new Date().toDateString();
-      if (isToday) {
+      dayHeader.className = 'grid-header day-header-label';
+      if (dayDate.toDateString() === new Date().toDateString()) {
         dayHeader.classList.add('today');
       }
-      
-      dayHeader.innerHTML = `
-        <div class="week-day-name">${dayDate.toLocaleDateString('en-US', { weekday: 'short' })}</div>
-        <div class="week-day-number">${dayDate.getDate()}</div>
-      `;
+      dayHeader.innerHTML = `<div class="day-name">${dayDate.toLocaleDateString('en-US', { weekday: 'short' })}</div><div class="day-number">${dayDate.getDate()}</div>`;
       dayColumn.appendChild(dayHeader);
       
-      // Add hour cells for this day
       hours.forEach(hour => {
         const hourCell = document.createElement('div');
-        hourCell.className = 'week-hour-cell';
+        hourCell.className = 'hour-cell';
         
-        // Filter events for this specific day and hour
         const dayEvents = events.filter(ev => {
           const evStart = new Date(ev.start_time);
           const evEnd = new Date(ev.end_time);
-          
-          // Check if event is on this day
-          if (evStart.toDateString() !== dayDate.toDateString() && 
-              evEnd.toDateString() !== dayDate.toDateString()) {
-            return false;
-          }
-          
-          // Check if event starts or spans this hour
+          if (evStart.toDateString() !== dayDate.toDateString()) return false;
           const hourStart = new Date(dayDate);
           hourStart.setHours(hour, 0, 0, 0);
-          
           const hourEnd = new Date(dayDate);
-          hourEnd.setHours(hour, 59, 59, 999);
-          
-          return (evStart <= hourEnd && evEnd >= hourStart);
+          hourEnd.setHours(hour + 1, 0, 0, 0);
+          return evStart < hourEnd && evEnd > hourStart;
         });
         
-        // Add events to this hour cell
         dayEvents.forEach(ev => {
           const evStart = new Date(ev.start_time);
           const evEnd = new Date(ev.end_time);
+          const item = document.createElement('div');
+          item.className = `event-item priority-${ev.priority || 0}`;
           
-          const eventItem = document.createElement('div');
-          eventItem.className = `event-item priority-${ev.priority || 0}`;
+          const startMinutes = evStart.getMinutes();
+          const endMinutes = evEnd.getMinutes();
           
-          // Calculate position and height based on start/end times
           if (evStart.getHours() === hour) {
-            // Event starts in this hour
-            const minutesOffset = evStart.getMinutes();
-            eventItem.style.top = `${minutesOffset}px`;
-            
-            // Calculate duration in minutes (capped to this hour if spanning multiple)
-            let endMinute = evEnd.getHours() > hour ? 59 : evEnd.getMinutes();
-            
-            // Fix for events ending exactly at the top of the next hour (e.g., 3:00 PM)
-            if (evEnd.getHours() === hour + 1 && evEnd.getMinutes() === 0) {
-              endMinute = 59; // Fill the entire hour
-            }
-            
-            const duration = endMinute - minutesOffset;
-            
-            // Set minimum height for very short events
-            eventItem.style.height = `${Math.max(duration, 25)}px`;
-          } else if (evStart.getHours() < hour && evEnd.getHours() > hour) {
-            // Event spans this entire hour
-            eventItem.style.top = '0px';
-            eventItem.style.height = '59px';
-          } else if (evStart.getHours() < hour && evEnd.getHours() === hour) {
-            // Event ends in this hour
-            eventItem.style.top = '0px';
-            
-            // If event ends exactly at the top of the hour (e.g., 3:00), fill the entire previous hour
-            const endMinute = evEnd.getMinutes() === 0 ? 59 : evEnd.getMinutes();
-            eventItem.style.height = `${endMinute}px`;
+            item.style.top = `${(startMinutes / 60) * 100}%`;
+            const duration = (evEnd.getTime() - evStart.getTime()) / (1000 * 60);
+            item.style.height = `${(duration / 60) * 100}%`;
+          } else { // Event starts before this hour
+            item.style.top = '0%';
+            const duration = (evEnd.getTime() - new Date(dayDate.setHours(hour, 0, 0, 0)).getTime()) / (1000 * 60);
+            item.style.height = `${(duration / 60) * 100}%`;
           }
           
-          eventItem.innerHTML = `
-            <div class="event-title">${ev.title}</div>
-            <div class="event-time">${formatTime(ev.start_time)}</div>
-          `;
-          hourCell.appendChild(eventItem);
+          item.innerHTML = `<div class="event-title">${ev.title}</div><div class="event-time">${formatTime(ev.start_time)}</div>`;
+          hourCell.appendChild(item);
         });
-
-        
         dayColumn.appendChild(hourCell);
       });
-      
-      weekGrid.appendChild(dayColumn);
+      grid.appendChild(dayColumn);
     }
-    
-    container.appendChild(weekGrid);
-    
+    container.appendChild(grid);
+
     // Add current time indicator
     const now = new Date();
-    const currentDay = now.getDay(); // 0 = Sunday, 6 = Saturday
-    const currentHour = now.getHours();
-    const currentMinute = now.getMinutes();
-    
-    // Calculate position for the time line
-    const timePosition = (currentHour * 60 + currentMinute) * (60 / 60); // 60px per hour
-    
-    // Create and position the time line
-    const timeLine = document.createElement('div');
-    timeLine.className = 'week-current-time-line';
-    timeLine.style.top = `${timePosition + 40}px`; // 40px offset for the header
-    
-    // Only show the line for the current day
-    timeLine.style.left = `calc(${(currentDay + 1) * 100 / 8}% - 12.5%)`;
-    timeLine.style.width = `${100 / 8}%`;
-    
-    container.appendChild(timeLine);
+    const todayColumn = Array.from(grid.querySelectorAll('.day-column .day-header-label')).find(h => h.classList.contains('today'));
+    if (todayColumn) {
+      const parentColumn = todayColumn.parentElement;
+      const timePosition = (now.getHours() * 60 + now.getMinutes()) / (24 * 60) * 100;
+      const timeLine = document.createElement('div');
+      timeLine.className = 'current-time-line';
+      timeLine.style.top = `calc(${timePosition}% + 40px)`; // 40px is header height
+      parentColumn.appendChild(timeLine);
+    }
   }
-}
-
-// Line which shows current time on calendar (day/week)
-function addCurrentTimeLine(container) {
-  const now = new Date();
-  const hour = now.getHours();
-  const minutes = now.getMinutes();
-
-  const position = (hour * 60 + minutes) * (60 / 60); // 60px per hour
-
-  const line = document.createElement('div');
-  line.className = 'current-time-line';
-  line.style.top = `${position}px`;
-
-  container.appendChild(line);
 }
 
 // Helper function to format time
 function formatTime(timeString) {
   const date = new Date(timeString);
-  return date.toLocaleTimeString('en-US', {
-    hour: 'numeric',
-    minute: '2-digit',
-    hour12: true
-  });
+  return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
 }
 
-document.getElementById('calendarView').addEventListener('change', async (e) => {
-  const view = e.target.value;
-  
-  // Clear old content
+// Event Listeners
+document.getElementById('calendarView').addEventListener('change', () => {
   document.querySelector('.calendar-grid').innerHTML = '';
   document.getElementById('calendarContainer').innerHTML = '';
-
-  // Toggle visibility
+  const view = document.getElementById('calendarView').value;
   if (view === 'month') {
     document.querySelector('.calendar-grid').style.display = 'grid';
     document.getElementById('calendarContainer').style.display = 'none';
@@ -457,48 +232,29 @@ document.getElementById('calendarView').addEventListener('change', async (e) => 
     document.querySelector('.calendar-grid').style.display = 'none';
     document.getElementById('calendarContainer').style.display = 'block';
   }
-
-  // Update the date display
   updateDateDisplay();
-  
-  // Load events for the current view
   loadEventsForCurrentView();
 });
 
-// Update the navigation buttons
 document.getElementById('prevMonth').addEventListener('click', () => {
   const view = document.getElementById('calendarView').value;
-  
-  if (view === 'month') {
-    currentDate.setMonth(currentDate.getMonth() - 1);
-  } else if (view === 'day') {
-    currentDate.setDate(currentDate.getDate() - 1);
-  } else if (view === 'week') {
-    currentDate.setDate(currentDate.getDate() - 7);
-  }
-  
+  if (view === 'month') currentDate.setMonth(currentDate.getMonth() - 1);
+  else if (view === 'day') currentDate.setDate(currentDate.getDate() - 1);
+  else if (view === 'week') currentDate.setDate(currentDate.getDate() - 7);
   updateDateDisplay();
   loadEventsForCurrentView();
 });
 
 document.getElementById('nextMonth').addEventListener('click', () => {
   const view = document.getElementById('calendarView').value;
-  
-  if (view === 'month') {
-    currentDate.setMonth(currentDate.getMonth() + 1);
-  } else if (view === 'day') {
-    currentDate.setDate(currentDate.getDate() + 1);
-  } else if (view === 'week') {
-    currentDate.setDate(currentDate.getDate() + 7);
-  }
-  
+  if (view === 'month') currentDate.setMonth(currentDate.getMonth() + 1);
+  else if (view === 'day') currentDate.setDate(currentDate.getDate() + 1);
+  else if (view === 'week') currentDate.setDate(currentDate.getDate() + 7);
   updateDateDisplay();
   loadEventsForCurrentView();
 });
 
-// Call this on page load
 document.addEventListener('DOMContentLoaded', function() {
   updateDateDisplay();
   loadEventsForCurrentView();
 });
-

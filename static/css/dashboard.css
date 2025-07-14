@@ -164,25 +164,23 @@ html, body {
   display: block;
 }
 
-/* ===== CALENDAR GRID ===== */
+/* ===== CALENDAR GRID (MONTH VIEW) ===== */
 .calendar-container {
   flex: 1;
-  padding: 5px 1rem 1rem; /* Reduced top padding */
-  margin-top: 5px; /* Reduced top margin */
+  padding: 10px 1rem 1rem;
   display: flex;
   flex-direction: column;
   overflow: hidden;
   box-sizing: border-box;
-  height: calc(100vh - 74px); /* Adjusted for navbar height */
 }
 
 .calendar-grid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  grid-template-rows: auto repeat(6, 1fr); /* header + 6 weeks */
-  gap: 0.5rem; /* ← ensures equal spacing all around cells */
+  grid-template-rows: auto repeat(6, 1fr);
+  gap: 0.5rem;
   flex-grow: 1;
-  height: calc(100vh - 160px); /* Navbar + controls height estimate */
+  height: calc(100vh - 160px);
   box-sizing: border-box;
 }
 
@@ -199,7 +197,6 @@ html, body {
   box-sizing: border-box;
 }
 
-/* ===== DAY CELL ===== */
 .day-cell {
   background-color: #fff;
   border: 1px solid #ddd;
@@ -234,7 +231,7 @@ html, body {
   display: block;
 }
 
-/* ===== EVENT STYLING ===== */
+/* ===== EVENT STYLING (MONTH VIEW) ===== */
 .event-item {
   background-color: #e3f2fd;
   border-left: 3px solid #2196f3;
@@ -279,162 +276,45 @@ html, body {
 
 /* ===== RESPONSIVENESS ===== */
 @media (max-width: 1200px) {
-  .sidebar {
-    width: 180px;
-  }
-
-  .main-content {
-    margin-left: 180px;
-  }
-
-  .navbar {
-    width: calc(100% - 180px);
-    margin-left: 180px;
-  }
+  .sidebar { width: 180px; }
+  .main-content { margin-left: 180px; }
+  .navbar { width: calc(100% - 180px); margin-left: 180px; }
 }
 
 @media (max-width: 768px) {
-  .sidebar {
-    width: 60px;
-    padding: 10px;
-  }
-
-  .sidebar h2 {
-    font-size: 1rem;
-    writing-mode: vertical-rl;
-    text-orientation: mixed;
-  }
-
-  .sidebar .tab {
-    padding: 8px 5px;
-    font-size: 0.8rem;
-  }
-
-  .main-content {
-    margin-left: 60px;
-  }
-
-  .navbar {
-    padding: 0.5rem 1rem;
-    margin-left: 60px;
-    width: calc(100% - 60px);
-  }
-
-  .user-profile .username {
-    max-width: 120px;
-    font-size: 0.8rem;
-  }
+  .sidebar { width: 60px; padding: 10px; }
+  .sidebar h2 { font-size: 1rem; writing-mode: vertical-rl; text-orientation: mixed; }
+  .sidebar .tab { padding: 8px 5px; font-size: 0.8rem; }
+  .main-content { margin-left: 60px; }
+  .navbar { padding: 0.5rem 1rem; margin-left: 60px; width: calc(100% - 60px); }
+  .user-profile .username { max-width: 120px; font-size: 0.8rem; }
 }
 
-/* ===== CALENDAR VIEW TYPE =====*/
+/* ===== DAY/WEEK VIEW CONTAINER =====*/
 #calendarContainer {
-  padding: 0px;
-  margin-top: 0px;
-  height: auto;
-  max-height: calc(100vh - 80px);
+  padding: 10px;
+  margin-top: 0;
+  height: calc(100vh - 74px); /* Full height minus navbar */
   overflow-y: scroll;
   position: relative;
   width: 100%;
+  box-sizing: border-box;
 }
 
-/* Common styles for day and week views */
-.timeline-grid,
-.week-grid {
+/* Common styles for day and week grids */
+.timeline-grid, .week-grid {
   display: grid;
   width: 100%;
   border: 1px solid #ddd;
   height: fit-content;
-  box-sizing: border-box;
   position: relative;
 }
 
-.timeline-grid {
-  grid-template-columns: 60px 1fr; /* hour column + main area */
-}
+.timeline-grid { grid-template-columns: 60px 1fr; }
+.week-grid { grid-template-columns: 60px repeat(7, 1fr); }
 
-.week-grid {
-  grid-template-columns: 60px repeat(7, 1fr);
-}
-
-/* Hour labels styling - common for day and week */
-.hour-labels,
-.week-time-column {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  background-color: #f9f9f9;
-  border-right: 1px solid #ddd;
-  z-index: 5;
-}
-
-.hour-labels div,
-.week-hour-label {
-  height: 60px;
-  border-bottom: 1px solid #ddd;
-  width: 100%;
-  padding: 0;
-  text-align: right;
-  font-size: 0.8rem;
-  color: #666;
-  display: flex;
-  align-items: flex-start;
-  justify-content: flex-end;
-  box-sizing: border-box;
-  padding-right: 8px;
-  padding-top: 5px;
-}
-
-/* Time slots styling - common for day and week */
-.time-slots,
-.week-day-column {
-  display: flex;
-  flex-direction: column;
-  flex-grow: 1;
-  border-right: 1px solid #eee;
-  min-width: 0;
-}
-
-.hour-slot,
-.week-hour-cell {
-  position: relative;
-  height: 60px;
-  border-bottom: 1px solid #eee;
-  padding: 0;
-  box-sizing: border-box;
-}
-
-/* Current time indicator - common for day and week */
-.current-time-line,
-.week-current-time-line {
-  position: absolute;
-  height: 2px;
-  background-color: red;
-  z-index: 10;
-  width: 100%;
-  left: 0;
-}
-
-/* Event styling - common for day and week */
-#calendarContainer .event-item,
-.week-hour-cell .event-item {
-  position: absolute;
-  margin: 1px 0;
-  padding: 2px 5px;
-  border-radius: 4px;
-  font-size: 0.8rem;
-  overflow: hidden;
-  background-color: #e3f2fd;
-  border-left: 3px solid #2196f3;
-  left: 2px;
-  right: 2px;
-  box-sizing: border-box;
-  width: calc(100% - 6px);
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-/* Week view specific styles */
-.week-header {
+/* Common styles for headers */
+.grid-header {
   height: 40px;
   padding: 5px;
   text-align: center;
@@ -444,19 +324,71 @@ html, body {
   display: flex;
   flex-direction: column;
   justify-content: center;
+  box-sizing: border-box;
 }
 
-.week-header.today {
+.time-header {
+  border-right: 1px solid #ddd;
+}
+
+.day-header-label.today {
   background-color: #e3f2fd;
   color: #1976d2;
 }
 
-.week-day-name {
-  font-size: 0.8rem;
+.day-name { font-size: 0.8rem; }
+.day-number { font-size: 1rem; }
+
+/* Common styles for time column */
+.time-column {
+  background-color: #f9f9f9;
 }
 
-.week-day-number {
-  font-size: 1rem;
+.hour-label {
+  height: 60px;
+  padding: 5px;
+  text-align: right;
+  border-bottom: 1px solid #ddd;
+  border-right: 1px solid #ddd;
+  font-size: 0.8rem;
+  color: #666;
+  box-sizing: border-box;
+}
+
+/* Common styles for day columns */
+.day-column {
+  border-right: 1px solid #eee;
+  position: relative; /* For positioning the red line */
+}
+.day-column:last-child { border-right: none; }
+
+.hour-cell {
+  height: 60px;
+  border-bottom: 1px solid #eee;
+  position: relative;
+  box-sizing: border-box;
+}
+
+/* Event styling in day/week view */
+#calendarContainer .event-item {
+  position: absolute;
+  left: 2px;
+  right: 2px;
+  box-sizing: border-box;
+  width: calc(100% - 4px);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Current time indicator */
+.current-time-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background-color: red;
+  z-index: 10;
 }
 
 /* Date navigation container */
@@ -508,27 +440,4 @@ html, body {
   border-radius: 4px;
   background-color: #fff;
   font-size: 0.9rem;
-}
-
-/* Remove the date header from day view */
-#calendarContainer h3 {
-  display: none;
-}
-
-/* Day view header to match week view */
-.timeline-header {
-  height: 40px;
-  padding: 5px;
-  text-align: center;
-  background-color: #f5f5f5;
-  border-bottom: 1px solid #ddd;
-  font-weight: bold;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-}
-
-.timeline-header.today {
-  background-color: #e3f2fd;
-  color: #1976d2;
 }
