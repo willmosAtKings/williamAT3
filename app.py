@@ -4,6 +4,9 @@ from werkzeug.security import generate_password_hash
 import secrets
 from extensions import db
 from datetime import datetime
+from datetime import datetime, timedelta
+from dateutil.relativedelta import relativedelta  # Add to the top of your file
+
 
 
 def create_app():
@@ -174,6 +177,7 @@ def create_app():
 
 
 
+
     @app.route('/event/create', methods=['GET', 'POST'])
     def create_event():
         # Only teachers can create events
@@ -183,60 +187,86 @@ def create_app():
         if request.method == 'GET':
             return render_template('create_event.html')
 
-        # Check CSRF token in headers
-        # csrf_token = request.headers.get('X-CSRF-Token')
-        # if not csrf_token or csrf_token != session.get('csrf_token'):
-        #     return jsonify({'error': 'Invalid CSRF token'}), 403
-
-        # POST expects JSON
         if not request.is_json:
             return jsonify({'error': 'Content-Type must be application/json'}), 415
 
         data = request.get_json()
 
-        # Validate required fields
-        required = ['title', 'start_time', 'end_time']
-        if not all(data.get(f) for f in required):
-            return jsonify({'error': 'Missing required fields'}), 400
+        event_type = data.get('event_type')
 
-        # main start/end times
-        try:
-            start_dt = datetime.strptime(data['start_time'], "%Y-%m-%dT%H:%M")
-            end_dt = datetime.strptime(data['end_time'], "%Y-%m-%dT%H:%M")
-        except Exception:
-            return jsonify({'error': 'Invalid date format. Use YYYY-MM-DDTHH:MM'}), 400
+        if event_type == 'recurring':
+            required = ['title', 'start_time', 'end_time', 'rec_start_date', 'rec_ends', 'rec_interval', 'rec_unit']
+            if not all(data.get(f) for f in required):
+                return jsonify({'error': 'Missing recurring event fields'}), 400
 
-        # recurring start date (if present)
-        rec_start_dt = None
-        if data.get('event_type') == 'recurring':
-            rec_start_str = data.get('rec_start_date')
-            if rec_start_str:
-                try:
-                    rec_start_dt = datetime.strptime(rec_start_str, "%Y-%m-%d")
-                except Exception:
-                    return jsonify({'error': 'Invalid recurring start date'}), 400
+            try:
+                start_date = datetime.strptime(data['rec_start_date'], "%Y-%m-%d")
+                end_date = datetime.strptime(data['rec_ends'], "%Y-%m-%d")
+                start_time = datetime.strptime(data['start_time'], "%H:%M").time()
+                end_time = datetime.strptime(data['end_time'], "%H:%M").time()
+                interval = int(data['rec_interval'])
+                unit = data['rec_unit']
+            except Exception as e:
+                return jsonify({'error': f'Invalid recurring event format: {str(e)}'}), 400
 
-        # Create Event (currently single instance - recurring logic comes later)
-        event = Event(
-            title=data['title'],
-            description=data.get('description', ''),
-            priority=int(data.get('priority', 0)),
-            genre=data.get('genre', ''),
-            tags=data.get('tags', ''),
-            is_public=bool(data.get('is_public', False)),
-            start_time=start_dt,
-            end_time=end_dt,
-            creator_id=session['user_id']
-        )
+            current = start_date
+            while current <= end_date:
+                start_dt = datetime.combine(current, start_time)
+                end_dt = datetime.combine(current, end_time)
 
-        db.session.add(event)
-        db.session.commit()
+                event = Event(
+                    title=data['title'],
+                    description=data.get('description', ''),
+                    priority=int(data.get('priority', 0)),
+                    genre=data.get('genre', ''),
+                    tags=data.get('tags', ''),
+                    is_public=bool(data.get('is_public', False)),
+                    start_time=start_dt,
+                    end_time=end_dt,
+                    creator_id=session['user_id']
+                )
+                db.session.add(event)
 
-        # Optionally log or return recurring start info
-        if rec_start_dt:
-            print(f"Recurring Start Date: {rec_start_dt.date()}")
+                if unit == 'daily':
+                    current += timedelta(days=interval)
+                elif unit == 'weekly':
+                    current += timedelta(weeks=interval)
+                elif unit == 'monthly':
+                    current += relativedelta(months=interval)
+                else:
+                    return jsonify({'error': 'Invalid recurrence unit'}), 400
 
-        return jsonify({'message': 'Event created successfully', 'event_id': event.id}), 200
+            db.session.commit()
+            return jsonify({'message': 'Recurring events created successfully'}), 200
+
+        else:
+            # Single-day or multi-day event
+            required = ['title', 'start_time', 'end_time']
+            if not all(data.get(f) for f in required):
+                return jsonify({'error': 'Missing required fields'}), 400
+
+            try:
+                start_dt = datetime.strptime(data['start_time'], "%Y-%m-%dT%H:%M")
+                end_dt = datetime.strptime(data['end_time'], "%Y-%m-%dT%H:%M")
+            except Exception:
+                return jsonify({'error': 'Invalid date format. Use YYYY-MM-DDTHH:MM'}), 400
+
+            event = Event(
+                title=data['title'],
+                description=data.get('description', ''),
+                priority=int(data.get('priority', 0)),
+                genre=data.get('genre', ''),
+                tags=data.get('tags', ''),
+                is_public=bool(data.get('is_public', False)),
+                start_time=start_dt,
+                end_time=end_dt,
+                creator_id=session['user_id']
+            )
+
+            db.session.add(event)
+            db.session.commit()
+
+            return jsonify({'message': 'Event created successfully', 'event_id': event.id}), 200
 
     
 

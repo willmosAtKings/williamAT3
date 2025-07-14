@@ -7,6 +7,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const displayDateEl = document.getElementById('displayDate');
   const eventDatePicker = document.getElementById('event_date_picker');
   const eventDateHidden = document.getElementById('event_date');
+  const form = document.getElementById('eventForm');
 
   let selectedDate = null;
 
@@ -34,11 +35,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const multiStart = document.getElementById('multi_start_date');
     const recStart = document.getElementById('rec_start_date');
-    const recEnds = document.getElementById('rec_ends');
 
     if (multiStart) multiStart.value = selectedDate;
     if (recStart) recStart.value = selectedDate;
-    if (recEnds) recEnds.value = selectedDate;
 
     updateDisplayDate();
 
@@ -89,12 +88,127 @@ document.addEventListener('DOMContentLoaded', () => {
     toggleInputs();
   });
 
-  // Final fallback
-  if (!displayDateEl.textContent || displayDateEl.textContent === '{{date}}') {
-    updateDisplayDate();
-  }
-
   // Also update display text when switching input values manually
   document.getElementById('multi_start_date')?.addEventListener('change', updateDisplayDate);
   document.getElementById('rec_start_date')?.addEventListener('change', updateDisplayDate);
+
+  // Handle form submit to send event data via fetch POST
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const type = document.getElementById('event_type').value;
+    const title = document.getElementById('title').value.trim();
+    const description = document.getElementById('description').value.trim();
+    const priority = document.getElementById('priority').value;
+    const genre = document.getElementById('genre').value.trim();
+    const tags = document.getElementById('tags').value.trim();
+    const isPublic = document.getElementById('is_public').checked;
+
+    let startTimeStr = null;
+    let endTimeStr = null;
+    let repeatUnit = null;
+    let repeatInterval = null;
+    let repeatEnds = null;
+    let repeatWeekdays = [];
+
+    try {
+      if (type === 'single') {
+        const date = document.getElementById('event_date_picker').value;
+        const startTime = document.getElementById('start_time').value;
+        const endTime = document.getElementById('end_time').value;
+
+        if (!date || !startTime || !endTime) {
+          alert('Please fill in date, start time, and end time.');
+          return;
+        }
+
+        startTimeStr = `${date}T${startTime}`;
+        endTimeStr = `${date}T${endTime}`;
+      }
+      else if (type === 'multi') {
+        const startDate = document.getElementById('multi_start_date').value;
+        const startTime = document.getElementById('multi_start_time').value;
+        const endDate = document.getElementById('multi_end_date').value;
+        const endTime = document.getElementById('multi_end_time').value;
+
+        if (!startDate || !startTime || !endDate || !endTime) {
+          alert('Please fill in start date/time and end date/time for multi-day event.');
+          return;
+        }
+
+        startTimeStr = `${startDate}T${startTime}`;
+        endTimeStr = `${endDate}T${endTime}`;
+      }
+      else if (type === 'recurring') {
+        const startDate = document.getElementById('rec_start_date').value;
+        const startTime = document.getElementById('start_time').value;
+        const endTime = document.getElementById('end_time').value;
+        repeatUnit = document.getElementById('rec_unit').value;
+        repeatInterval = document.getElementById('rec_interval').value;
+        repeatEnds = document.getElementById('rec_ends').value;
+
+        if (!startDate || !startTime || !endTime || !repeatUnit || !repeatInterval) {
+          alert('Please fill in all required fields for recurring event.');
+          return;
+        }
+
+        // Compose start and end times for first event occurrence
+        startTimeStr = `${startDate}T${startTime}`;
+        endTimeStr = `${startDate}T${endTime}`;
+
+        // Get checked weekdays if weekly recurrence
+        if (repeatUnit === 'weekly') {
+          repeatWeekdays = Array.from(document.querySelectorAll('#recurringDayInputs input[type="checkbox"]:checked')).map(cb => cb.value);
+          if (repeatWeekdays.length === 0) {
+            alert('Please select at least one weekday for weekly recurring event.');
+            return;
+          }
+        }
+      }
+
+      // Prepare JSON payload
+      const payload = {
+        type,
+        title,
+        description,
+        priority: parseInt(priority),
+        genre,
+        tags,
+        is_public: isPublic,
+        start_time: startTimeStr,
+        end_time: endTimeStr,
+      };
+
+      // Add recurring fields if applicable
+      if (type === 'recurring') {
+        payload.repeat_unit = repeatUnit;
+        payload.repeat_interval = parseInt(repeatInterval);
+        payload.repeat_ends = repeatEnds || null;
+        payload.repeat_weekdays = repeatWeekdays;
+      }
+
+      // Send POST request
+      const response = await fetch('/event/create', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+          // Include CSRF token here if used
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        alert('Event created successfully!');
+        window.location.href = '/dashboard';
+      } else {
+        alert('Error creating event: ' + (result.error || 'Unknown error'));
+      }
+    } catch (err) {
+      alert('Unexpected error: ' + err.message);
+      console.error(err);
+    }
+  });
+
 });
