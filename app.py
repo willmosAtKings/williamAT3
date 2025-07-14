@@ -20,7 +20,7 @@ def create_app():
         from models.event import Event
         from models.user import User
 
-
+    # ... (all other routes are correct and remain the same) ...
     @app.route('/')
     def index():
         return render_template('login.html')
@@ -248,18 +248,14 @@ def create_app():
             query = Event.query
         else:
             user_tags = user.tags
-
             private_event_condition = and_(
                 Event.creator_id == user.id,
                 or_(Event.tags == '', Event.tags == None)
             )
-
             filter_conditions = [private_event_condition]
-            
             if user_tags:
                 for tag in user_tags:
                     filter_conditions.append(Event.tags.like(f'%{tag}%'))
-            
             query = Event.query.filter(or_(*filter_conditions))
 
         range_type = request.args.get('range', 'month')
@@ -274,7 +270,15 @@ def create_app():
                     end = start + timedelta(days=7)
                 else:
                     end = start + relativedelta(months=1)
-                query = query.filter(Event.start_time >= start, Event.start_time < end)
+                
+                # --- THE FIX: Change the date filtering logic ---
+                # Find events that OVERLAP with the date range.
+                query = query.filter(
+                    Event.start_time < end, 
+                    Event.end_time > start
+                )
+                # --- END OF FIX ---
+
             except Exception:
                 return jsonify({'error': 'Invalid date format'}), 400
 
