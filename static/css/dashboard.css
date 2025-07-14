@@ -164,23 +164,25 @@ html, body {
   display: block;
 }
 
-/* ===== CALENDAR GRID (MONTH VIEW) ===== */
+/* ===== CALENDAR GRID ===== */
 .calendar-container {
   flex: 1;
-  padding: 10px 1rem 1rem;
+  padding: 5px 1rem 1rem; /* Reduced top padding */
+  margin-top: 5px; /* Reduced top margin */
   display: flex;
   flex-direction: column;
   overflow: hidden;
   box-sizing: border-box;
+  height: calc(100vh - 74px); /* Adjusted for navbar height */
 }
 
 .calendar-grid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  grid-template-rows: auto repeat(6, 1fr);
-  gap: 0.5rem;
+  grid-template-rows: auto repeat(6, 1fr); /* header + 6 weeks */
+  gap: 0.5rem; /* ← ensures equal spacing all around cells */
   flex-grow: 1;
-  height: calc(100vh - 160px);
+  height: calc(100vh - 160px); /* Navbar + controls height estimate */
   box-sizing: border-box;
 }
 
@@ -197,6 +199,7 @@ html, body {
   box-sizing: border-box;
 }
 
+/* ===== DAY CELL ===== */
 .day-cell {
   background-color: #fff;
   border: 1px solid #ddd;
@@ -209,10 +212,13 @@ html, body {
   box-sizing: border-box;
   overflow: hidden;
   position: relative;
+  cursor: pointer;
+  transition: background-color 0.2s;
 }
 
 .day-cell:hover {
   background-color: #f1f3f5;
+  box-shadow: 0 0 0 2px #007bff inset;
 }
 
 .add-event-btn {
@@ -231,7 +237,7 @@ html, body {
   display: block;
 }
 
-/* ===== EVENT STYLING (MONTH VIEW) ===== */
+/* ===== EVENT STYLING ===== */
 .event-item {
   background-color: #e3f2fd;
   border-left: 3px solid #2196f3;
@@ -276,29 +282,63 @@ html, body {
 
 /* ===== RESPONSIVENESS ===== */
 @media (max-width: 1200px) {
-  .sidebar { width: 180px; }
-  .main-content { margin-left: 180px; }
-  .navbar { width: calc(100% - 180px); margin-left: 180px; }
+  .sidebar {
+    width: 180px;
+  }
+
+  .main-content {
+    margin-left: 180px;
+  }
+
+  .navbar {
+    width: calc(100% - 180px);
+    margin-left: 180px;
+  }
 }
 
 @media (max-width: 768px) {
-  .sidebar { width: 60px; padding: 10px; }
-  .sidebar h2 { font-size: 1rem; writing-mode: vertical-rl; text-orientation: mixed; }
-  .sidebar .tab { padding: 8px 5px; font-size: 0.8rem; }
-  .main-content { margin-left: 60px; }
-  .navbar { padding: 0.5rem 1rem; margin-left: 60px; width: calc(100% - 60px); }
-  .user-profile .username { max-width: 120px; font-size: 0.8rem; }
+  .sidebar {
+    width: 60px;
+    padding: 10px;
+  }
+
+  .sidebar h2 {
+    font-size: 1rem;
+    writing-mode: vertical-rl;
+    text-orientation: mixed;
+  }
+
+  .sidebar .tab {
+    padding: 8px 5px;
+    font-size: 0.8rem;
+  }
+
+  .main-content {
+    margin-left: 60px;
+  }
+
+  .navbar {
+    padding: 0.5rem 1rem;
+    margin-left: 60px;
+    width: calc(100% - 60px);
+  }
+
+  .user-profile .username {
+    max-width: 120px;
+    font-size: 0.8rem;
+  }
 }
 
-/* ===== DAY/WEEK VIEW CONTAINER =====*/
+/* ===== CALENDAR VIEW TYPE =====*/
 #calendarContainer {
-  padding: 10px;
-  margin-top: 0;
-  height: calc(100vh - 74px); /* Full height minus navbar */
-  overflow-y: scroll;
+  padding: 0px;
+  margin-top: 0px;
+  height: auto;
+  max-height: calc(100vh - 80px);
+  overflow-y: auto;
+  overflow-x: hidden; /* Prevent horizontal scrolling */
   position: relative;
   width: 100%;
-  box-sizing: border-box;
 }
 
 /* Common styles for day and week grids */
@@ -308,10 +348,21 @@ html, body {
   border: 1px solid #ddd;
   height: fit-content;
   position: relative;
+  overflow-x: hidden; /* Prevent horizontal scrolling */
 }
 
-.timeline-grid { grid-template-columns: 60px 1fr; }
-.week-grid { grid-template-columns: 60px repeat(7, 1fr); }
+/* Fixed grid layouts */
+.timeline-grid {
+  grid-template-columns: 60px 1fr;
+  width: 100%;
+  max-width: 100%;
+}
+
+.week-grid {
+  grid-template-columns: 60px repeat(7, 1fr);
+  width: 100%;
+  max-width: 100%;
+}
 
 /* Common styles for headers */
 .grid-header {
@@ -325,6 +376,12 @@ html, body {
   flex-direction: column;
   justify-content: center;
   box-sizing: border-box;
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  overflow: hidden; /* Prevent text overflow */
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .time-header {
@@ -336,12 +393,26 @@ html, body {
   color: #1976d2;
 }
 
-.day-name { font-size: 0.8rem; }
-.day-number { font-size: 1rem; }
+.day-name {
+  font-size: 0.8rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.day-number {
+  font-size: 1rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 
 /* Common styles for time column */
 .time-column {
   background-color: #f9f9f9;
+  position: relative;
+  width: 60px;
+  min-width: 60px;
+  max-width: 60px;
+  flex-shrink: 0; /* Prevent the time column from shrinking */
 }
 
 .hour-label {
@@ -358,15 +429,28 @@ html, body {
 /* Common styles for day columns */
 .day-column {
   border-right: 1px solid #eee;
-  position: relative; /* For positioning the red line */
+  position: relative;
+  min-width: 0; /* Allow columns to shrink below their content size */
+  overflow: hidden; /* Prevent content overflow */
 }
-.day-column:last-child { border-right: none; }
+
+.week-grid .day-column {
+  max-width: calc(100% / 7); /* Each column takes exactly 1/7 of the grid width */
+}
+
+.day-column:last-child {
+  border-right: none;
+}
 
 .hour-cell {
   height: 60px;
   border-bottom: 1px solid #eee;
   position: relative;
   box-sizing: border-box;
+}
+
+.hour-cell-current {
+  background-color: #fffde7; /* A very light yellow */
 }
 
 /* Event styling in day/week view */
@@ -387,8 +471,9 @@ html, body {
   left: 0;
   right: 0;
   height: 2px;
-  background-color: red;
+  background-color: #e53935; /* A slightly darker red */
   z-index: 10;
+  pointer-events: none; /* Make sure it doesn't block clicks on events */
 }
 
 /* Date navigation container */
@@ -442,37 +527,28 @@ html, body {
   font-size: 0.9rem;
 }
 
-/* Style for the current hour's cell */
-.hour-cell-current {
-  background-color: #fffde7; /* A very light yellow */
+/* Remove the date header from day view */
+#calendarContainer h3 {
+  display: none;
 }
 
-/* Style for the 24:00 label at the bottom */
-.hour-label-end {
-  height: auto; /* Let content define height */
-  border-bottom: none; /* No bottom border */
-  padding: 5px;
-  text-align: right;
-  font-size: 0.8rem;
-  color: #666;
-  box-sizing: border-box;
-  padding-right: 8px;
-  position: relative;
-  top: -10px; /* Nudge it up to align with the grid's final line */
+/* Make day headers in week view clickable */
+.week-grid .day-header-label {
+  cursor: pointer;
+  transition: background-color 0.2s;
 }
 
-/* Corrected red line positioning */
-.current-time-line {
-  position: absolute;
-  left: 0;
-  right: 0;
-  height: 2px;
-  background-color: #e53935; /* A slightly darker red */
-  z-index: 10;
-  pointer-events: none; /* Make sure it doesn't block clicks on events */
+.week-grid .day-header-label:hover {
+  background-color: #e3f2fd;
 }
 
-/* Ensure day column can contain the positioned red line */
-.day-column {
-  position: relative; 
+/* Add some spacing between navbar and calendar content */
+.calendar-container {
+  padding-top: 15px;
+  margin-top: 10px;
+}
+
+#calendarContainer {
+  padding-top: 15px;
+  margin-top: 10px;
 }

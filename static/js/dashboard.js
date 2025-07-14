@@ -64,6 +64,27 @@ async function loadEventsForCurrentView() {
   }
 }
 
+// Helper function to navigate to a specific day
+function navigateToDay(date) {
+  // Create a new Date object to avoid reference issues
+  const targetDate = new Date(date);
+  console.log(`Navigating to day: ${targetDate.toDateString()}`);
+  
+  // Set the current date to the target day
+  currentDate = targetDate;
+  
+  // Switch to day view
+  document.getElementById('calendarView').value = 'day';
+  
+  // Toggle visibility
+  document.querySelector('.calendar-grid').style.display = 'none';
+  document.getElementById('calendarContainer').style.display = 'block';
+  
+  // Update display and load events
+  updateDateDisplay();
+  loadEventsForCurrentView();
+}
+
 function renderMonthCalendar(date = new Date(), events = []) {
   console.log('render MonthCalendar called');
   const calendarGrid = document.querySelector('.calendar-grid');
@@ -252,6 +273,16 @@ function renderCalendar(events, view) {
         dayHeader.classList.add('today');
       }
       dayHeader.innerHTML = `<div class="day-name">${dayDate.toLocaleDateString('en-US', { weekday: 'short' })}</div><div class="day-number">${dayDate.getDate()}</div>`;
+      
+      // Make day header clickable in week view to navigate to day view
+      if (view === 'week') {
+        dayHeader.style.cursor = 'pointer';
+        dayHeader.addEventListener('click', () => {
+          // Navigate to this specific day
+          navigateToDay(dayDate);
+        });
+      }
+      
       dayColumn.appendChild(dayHeader);
       
       let totalEventsForDay = 0;
