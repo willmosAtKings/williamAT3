@@ -20,7 +20,7 @@ def create_app():
         from models.event import Event
         from models.user import User
 
-    # ... (all other routes are correct and remain the same) ...
+    # ... (other routes are correct and remain the same) ...
     @app.route('/')
     def index():
         return render_template('login.html')
@@ -138,6 +138,16 @@ def create_app():
                 weekdays_list = data.get('rec_weekdays', [])
             except Exception as e:
                 return jsonify({'error': f'Invalid recurring event format: {str(e)}'}), 400
+
+            # --- NEW VALIDATION LOGIC ---
+            if end_date < start_date:
+                return jsonify({'error': 'End date cannot be before the start date.'}), 400
+            
+            limit_date = start_date + relativedelta(years=2)
+            if end_date > limit_date:
+                return jsonify({'error': 'Recurring events cannot extend more than 2 years.'}), 400
+            # --- END VALIDATION ---
+
             weekday_map = ['MO', 'TU', 'WE', 'TH', 'FR', 'SA', 'SU']
             current = start_date
             while current <= end_date:
@@ -177,6 +187,12 @@ def create_app():
                 end_dt = datetime.strptime(data['end_time'], "%Y-%m-%dT%H:%M")
             except Exception:
                 return jsonify({'error': 'Invalid date format. Use YYYY-MM-DDTHH:MM'}), 400
+
+            # --- NEW VALIDATION LOGIC ---
+            if end_dt <= start_dt:
+                return jsonify({'error': 'End time must be after the start time.'}), 400
+            # --- END VALIDATION ---
+
             event = Event(
                 title=data['title'],
                 description=data.get('description', ''),
@@ -190,6 +206,7 @@ def create_app():
             db.session.commit()
             return jsonify({'message': 'Event created successfully', 'event_id': event.id}), 200
 
+    # ... (profile and API routes are correct and remain the same) ...
     @app.route('/profile/info')
     def profile():
         user_id = session.get('user_id')
@@ -271,14 +288,10 @@ def create_app():
                 else:
                     end = start + relativedelta(months=1)
                 
-                # --- THE FIX: Change the date filtering logic ---
-                # Find events that OVERLAP with the date range.
                 query = query.filter(
                     Event.start_time < end, 
                     Event.end_time > start
                 )
-                # --- END OF FIX ---
-
             except Exception:
                 return jsonify({'error': 'Invalid date format'}), 400
 
