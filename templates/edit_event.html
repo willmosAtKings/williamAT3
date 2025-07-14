@@ -1,11 +1,57 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+  <meta charset="UTF-8" />
+  <title>Edit Event</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="/static/css/create_event.css" />
 </head>
-<body>
+<body data-user-role="{{ user_role }}">
+  <a href="/dashboard" class="back-button">← Back to Dashboard</a>
+
+  <form id="eventForm">
+
+    <div id="singleDayInputs">
+      <label for="start_time">Start Time:</label>
+      <input type="datetime-local" id="start_time">
+      
+      <label for="end_time">End Time:</label>
+      <input type="datetime-local" id="end_time">
+    </div>
     
+    <br><hr><br>
+
+    <label>Title:</label>
+    <input type="text" id="title" required><br>
+
+    <label>Description:</label>
+    <textarea id="description"></textarea><br>
+
+    <label>Priority:</label>
+    <select id="priority">
+      <option value="0">Low</option>
+      <option value="1">Medium</option>
+      <option value="2">High</option>
+    </select><br>
+
+    <div id="tag-section">
+        <div class="form-group">
+            <label>Tags</label>
+            <div class="mega-menu-container">
+                <div id="tag-selector-button" class="tag-selector-button">
+                    <span>Select Tags...</span>
+                    <i class="arrow down"></i>
+                </div>
+                <div id="mega-menu-dropdown" class="mega-menu-dropdown"></div>
+                <input type="hidden" name="tags" id="selected-tags-input">
+            </div>
+            <div id="selected-tags-display" class="selected-tags-display"></div>
+        </div>
+    </div>
+
+    <button type="submit" id="submitBtn">Save Changes</button>
+  </form>
+
+  <script src="/static/js/edit_event.js"></script>
 </body>
 </html>

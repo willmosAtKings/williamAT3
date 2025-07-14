@@ -109,7 +109,7 @@ def create_app():
     def create_event():
         user_role = session.get('user_role')
         if user_role not in ['student', 'teacher', 'admin']:
-            return jsonify({'error': 'Unauthorized'}), 403
+            return jsonify({'error': 'Unauthorised'}), 403
 
         if request.method == 'GET':
             return render_template('create_event.html', user_role=user_role)
@@ -238,7 +238,7 @@ def create_app():
         from models.user import User
         
         if 'user_id' not in session:
-            return jsonify({'error': 'Unauthorized'}), 401
+            return jsonify({'error': 'Unauthorised'}), 401
             
         user = db.session.get(User, session['user_id'])
         event = db.session.get(Event, event_id)
@@ -325,7 +325,7 @@ def create_app():
     def update_profile_tags():
         from models.user import User
         if 'user_id' not in session:
-            return jsonify({'error': 'Unauthorized'}), 401
+            return jsonify({'error': 'Unauthorised'}), 401
         user = db.session.get(User, session['user_id'])
         if not user:
             return jsonify({'error': 'User not found'}), 401
@@ -343,7 +343,7 @@ def create_app():
         from models.user import User
 
         if 'user_id' not in session:
-            return jsonify({'error': 'Unauthorized'}), 401
+            return jsonify({'error': 'Unauthorised'}), 401
 
         user = db.session.get(User, session['user_id'])
         if not user:

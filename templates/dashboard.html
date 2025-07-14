@@ -5,9 +5,8 @@
   <title>Dashboard</title>
   <link rel="stylesheet" href="/static/css/dashboard.css" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-  <link>
 </head>
-<body>
+<body data-user-id="{{ user_id }}" data-user-role="{{ user_role }}">
   <div class="sidebar">
     <h2>Menu</h2>
     <div class="tab">Tab 1</div>
@@ -57,13 +56,6 @@
     
     <div class="calendar-container">
       <div class="calendar-grid">
-        <div class="day-header">Sun</div>
-        <div class="day-header">Mon</div>
-        <div class="day-header">Tue</div>
-        <div class="day-header">Wed</div>
-        <div class="day-header">Thu</div>
-        <div class="day-header">Fri</div>
-        <div class="day-header">Sat</div>
       </div>
     </div>
 
@@ -99,8 +91,6 @@
         
         <div class="event-metadata">
           <div class="event-tags" id="eventTags">
-            <span class="tag">homework</span>
-            <span class="tag">math</span>
           </div>
         </div>
       </div>

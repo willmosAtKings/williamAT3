@@ -1,21 +1,13 @@
-// --- THIS IS THE FIX ---
-// Modify the main Create Event button to be context-aware
+// Handle Create Event button click - navigate to create event page
 document.querySelector('.create-button').addEventListener('click', function(e) {
   e.preventDefault();
-  
-  // Get the currently viewed date from our global variable
   const date = currentDate;
-  
-  // Format it into YYYY-MM-DD
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, '0');
   const day = String(date.getDate()).padStart(2, '0');
   const dateStr = `${year}-${month}-${day}`;
-  
-  // Navigate to the create page with the date pre-filled in the URL
   window.location.href = `/event/create?date=${dateStr}`;
 });
-// --- END OF FIX ---
 
 const calendarGrid = document.querySelector('.calendar-grid');
 let currentDate = new Date();
@@ -400,9 +392,14 @@ function formatRecurrence(recurrence) {
   return pattern;
 }
 
+// --- UPDATED FUNCTION WITH PERMISSION LOGIC ---
 function showEventDetails(event) {
+  // Get current user info from the data attributes on the body tag
+  const currentUserId = parseInt(document.body.dataset.userId, 10);
+  const currentUserRole = document.body.dataset.userRole;
+
+  // Populate modal with event details (title, priority, etc.)
   document.getElementById('eventTitle').textContent = event.title;
-  
   const priorityBadge = document.getElementById('eventPriority');
   priorityBadge.textContent = ['Low', 'Medium', 'High'][event.priority] || 'Low';
   priorityBadge.className = 'event-badge ' + (['low', 'medium', 'high'][event.priority] || 'low');
@@ -422,9 +419,8 @@ function showEventDetails(event) {
   
   const tagsContainer = document.getElementById('eventTags');
   tagsContainer.innerHTML = '';
-  
   if (event.tags) {
-    let tags = typeof event.tags === 'string' ? event.tags.split(',').map(tag => tag.trim()) : event.tags;
+    const tags = typeof event.tags === 'string' ? event.tags.split(',').map(tag => tag.trim()) : event.tags;
     tags.forEach(tag => {
       const tagSpan = document.createElement('span');
       tagSpan.className = 'tag';
@@ -433,24 +429,51 @@ function showEventDetails(event) {
     });
   }
   
-  document.getElementById('editEventBtn').onclick = () => {
-    window.location.href = `/event/edit/${event.id}`;
-  };
-  
-  document.getElementById('deleteEventBtn').onclick = () => {
-    if (confirm('Are you sure you want to delete this event?')) {
-      fetch(`/api/events/${event.id}`, { method: 'DELETE' })
-        .then(response => {
-          if (response.ok) {
-            eventModal.style.display = 'none';
-            loadEventsForCurrentView();
-          } else {
-            alert('Failed to delete event');
-          }
-        })
-        .catch(error => console.error('Error deleting event:', error));
-    }
-  };
-  
+  // --- PERMISSION LOGIC FOR EDIT BUTTON ---
+  const editButton = document.getElementById('editEventBtn');
+  let canEdit = false;
+
+  if (currentUserRole === 'admin') {
+    canEdit = true; // Admins can edit anything
+  } else if (currentUserRole === 'teacher' && event.creator_role !== 'student') {
+    canEdit = true; // Teachers can edit anything except student events
+  } else if (currentUserRole === 'student' && event.creator_id === currentUserId) {
+    canEdit = true; // Students can only edit their own events
+  }
+
+  if (canEdit) {
+    editButton.style.display = 'inline-block';
+    editButton.onclick = () => {
+      window.location.href = `/event/edit/${event.id}`;
+    };
+  } else {
+    editButton.style.display = 'none';
+  }
+  // --- END PERMISSION LOGIC ---
+
+  // Delete button logic (can be the same as edit, or different)
+  // For now, we'll use the same logic for deleting.
+  const deleteButton = document.getElementById('deleteEventBtn');
+  if (canEdit) {
+      deleteButton.style.display = 'inline-block';
+      deleteButton.onclick = () => {
+        if (confirm('Are you sure you want to delete this event?')) {
+          fetch(`/api/events/${event.id}`, { method: 'DELETE' })
+            .then(response => {
+              if (response.ok) {
+                eventModal.style.display = 'none';
+                loadEventsForCurrentView();
+              } else {
+                alert('Failed to delete event');
+              }
+            })
+            .catch(error => console.error('Error deleting event:', error));
+        }
+      };
+  } else {
+      deleteButton.style.display = 'none';
+  }
+
+  // Show the modal
   eventModal.style.display = 'block';
 }
