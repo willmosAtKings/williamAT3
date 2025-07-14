@@ -83,14 +83,17 @@ function renderCalendar(date = new Date(), events = []) {
     cell.appendChild(dayNum);
     cell.appendChild(addBtn);
 
+    const currentCellDate = new Date(year, month, day);
+    currentCellDate.setHours(0, 0, 0, 0);
+    
     const dayEvents = events.filter(ev => {
-      const evDate = new Date(ev.start_time);
-      return (
-        evDate.getFullYear() === year &&
-        evDate.getMonth() === month &&
-        evDate.getDate() === day
-      );
+      const start = new Date(ev.start_time);
+      const end = new Date(ev.end_time);
+      start.setHours(0, 0, 0, 0);
+      end.setHours(0, 0, 0, 0);
+      return currentCellDate >= start && currentCellDate <= end;
     });
+    
 
     dayEvents.forEach(event => {
       const eventDiv = document.createElement('div');
