@@ -210,11 +210,12 @@ def create_app():
             except Exception as e:
                 return jsonify({'error': f'Invalid recurring event format: {str(e)}'}), 400
 
+            weekday_map = ['MO', 'TU', 'WE', 'TH', 'FR', 'SA', 'SU']
             current = start_date
             while current <= end_date:
                 if unit == 'weekly' and weekdays_list:
-                    # Only add events on selected weekdays
-                    if current.strftime('%a').lower()[:3] not in [day.lower()[:3] for day in weekdays_list]:
+                    current_weekday_code = weekday_map[current.weekday()]
+                    if current_weekday_code not in weekdays_list:
                         current += timedelta(days=1)
                         continue
 
@@ -241,6 +242,7 @@ def create_app():
                     current += timedelta(days=1)  # we loop day-by-day and filter by weekday
                 elif unit == 'monthly':
                     current += relativedelta(months=interval)
+
                 else:
                     return jsonify({'error': 'Invalid recurrence unit'}), 400
 
