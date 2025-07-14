@@ -1,19 +1,118 @@
 document.addEventListener('DOMContentLoaded', () => {
   console.log("create_event.js loaded and DOM ready");
 
+  // --- MEGA MENU SETUP ---
+  const tagStructure = {
+    "Audience": ["public", "student", "teacher", "admin"],
+    "Year Level": ["year-7", "year-8", "year-9", "year-10", "year-11", "year-12"],
+    "Activity Type": ["sport", "academic", "co-curricular", "assembly", "excursion"],
+    // You can easily add more categories and tags here in the future
+    // "Departments": ["math", "science", "english"], 
+  };
+
+  const megaMenuDropdown = document.getElementById('mega-menu-dropdown');
+  const tagSelectorButton = document.getElementById('tag-selector-button');
+  const selectedTagsInput = document.getElementById('selected-tags-input');
+  const selectedTagsDisplay = document.getElementById('selected-tags-display');
+  let selectedTags = new Set();
+
+  // Function to build the mega menu HTML from the data structure
+  function buildMegaMenu() {
+    megaMenuDropdown.innerHTML = '';
+    for (const category in tagStructure) {
+      const categoryDiv = document.createElement('div');
+      categoryDiv.className = 'mega-menu-category';
+      
+      const categoryTitle = document.createElement('h4');
+      categoryTitle.textContent = category;
+      categoryDiv.appendChild(categoryTitle);
+      
+      const tagsContainer = document.createElement('div');
+      tagsContainer.className = 'mega-menu-tags';
+      
+      tagStructure[category].forEach(tag => {
+        const tagEl = document.createElement('div');
+        tagEl.className = 'mega-menu-tag';
+        tagEl.textContent = tag;
+        tagEl.dataset.tag = tag;
+        tagsContainer.appendChild(tagEl);
+      });
+      
+      categoryDiv.appendChild(tagsContainer);
+      megaMenuDropdown.appendChild(categoryDiv);
+    }
+  }
+
+  // Function to update the display of selected tags (the "pills")
+  function updateSelectedTagsDisplay() {
+    selectedTagsDisplay.innerHTML = '';
+    selectedTags.forEach(tag => {
+      const pill = document.createElement('div');
+      pill.className = 'selected-tag-pill';
+      pill.innerHTML = `<span>${tag}</span><span class="remove-tag" data-tag="${tag}">×</span>`;
+      selectedTagsDisplay.appendChild(pill);
+    });
+    // Update the hidden input that will be sent with the form
+    selectedTagsInput.value = Array.from(selectedTags).join(',');
+  }
+
+  // Event Listener: Show/hide mega menu
+  tagSelectorButton.addEventListener('click', () => {
+    megaMenuDropdown.classList.toggle('show');
+  });
+
+  // Event Listener: Handle tag selection/deselection from the dropdown
+  megaMenuDropdown.addEventListener('click', (e) => {
+    if (e.target.classList.contains('mega-menu-tag')) {
+      const tag = e.target.dataset.tag;
+      if (selectedTags.has(tag)) {
+        selectedTags.delete(tag);
+        e.target.classList.remove('selected');
+      } else {
+        selectedTags.add(tag);
+        e.target.classList.add('selected');
+      }
+      updateSelectedTagsDisplay();
+    }
+  });
+
+  // Event Listener: Handle tag removal by clicking the 'x' on a pill
+  selectedTagsDisplay.addEventListener('click', (e) => {
+    if (e.target.classList.contains('remove-tag')) {
+      const tag = e.target.dataset.tag;
+      selectedTags.delete(tag);
+      updateSelectedTagsDisplay();
+      // Also un-highlight the tag in the main dropdown for visual consistency
+      const tagInMenu = megaMenuDropdown.querySelector(`.mega-menu-tag[data-tag="${tag}"]`);
+      if (tagInMenu) {
+        tagInMenu.classList.remove('selected');
+      }
+    }
+  });
+
+  // Event Listener: Close mega menu if clicking anywhere else on the page
+  window.addEventListener('click', (e) => {
+    if (!e.target.closest('.mega-menu-container')) {
+      megaMenuDropdown.classList.remove('show');
+    }
+  });
+
+  // Initialize the menu when the page loads
+  buildMegaMenu();
+  // --- END MEGA MENU SETUP ---
+
+
+  // --- EXISTING LOGIC (PRESERVED) ---
   const urlParams = new URLSearchParams(window.location.search);
   const dateFromUrl = urlParams.get('date');
-
   const displayDateEl = document.getElementById('displayDate');
   const eventDatePicker = document.getElementById('event_date_picker');
   const eventDateHidden = document.getElementById('event_date');
   const form = document.getElementById('eventForm');
-
   let selectedDate = null;
 
   function updateDisplayDate() {
     const type = document.getElementById('event_type').value;
-
     if (type === 'single') {
       const single = document.getElementById('event_date_picker').value;
       displayDateEl.textContent = single || '(no date selected)';
@@ -26,89 +125,63 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // Prefill date from URL
   if (dateFromUrl) {
     selectedDate = dateFromUrl;
-
     if (eventDatePicker) eventDatePicker.value = selectedDate;
     if (eventDateHidden) eventDateHidden.value = selectedDate;
-
     const multiStart = document.getElementById('multi_start_date');
     const recStart = document.getElementById('rec_start_date');
-
     if (multiStart) multiStart.value = selectedDate;
     if (recStart) recStart.value = selectedDate;
-
     updateDisplayDate();
-
-    // Clean URL
-    urlParams.delete('date');
     const newUrl = window.location.pathname + (urlParams.toString() ? '?' + urlParams.toString() : '');
     window.history.replaceState({}, '', newUrl);
   }
 
-  // Keep selected date up to date for single-day
   eventDatePicker?.addEventListener('change', (e) => {
     selectedDate = e.target.value;
     eventDateHidden.value = selectedDate;
     updateDisplayDate();
   });
 
-  // Event type toggle
   const toggleInputs = () => {
     const type = document.getElementById('event_type').value;
     const recUnit = document.getElementById('rec_unit')?.value;
-  
     document.getElementById('singleDayInputs').style.display = type === 'single' ? 'block' : 'none';
     document.getElementById('multiDayInputs').style.display = type === 'multi' ? 'block' : 'none';
     document.getElementById('recurringDayInputs').style.display = type === 'recurring' ? 'block' : 'none';
-  
-    // If recurring + weekly → show checkboxes
     const weekdaySection = document.getElementById('weekdaySelector');
     if (type === 'recurring' && recUnit === 'weekly') {
       weekdaySection.style.display = 'block';
     } else {
       weekdaySection.style.display = 'none';
     }
-  
     updateDisplayDate();
   };
   
-  // Attach this event handler AFTER DOM loads
   document.getElementById('event_type')?.addEventListener('change', toggleInputs);
-  
-  // Also recheck weekday display if the repeat unit changes
   document.getElementById('rec_unit')?.addEventListener('change', toggleInputs);
-  
-  // Run on load
   toggleInputs();
   
-
-  // Update date if sent from dashboard via JS event
   window.addEventListener('changeCreateEventDate', (e) => {
     const newDate = e.detail;
     selectedDate = newDate;
-
     if (eventDatePicker) eventDatePicker.value = newDate;
     if (eventDateHidden) eventDateHidden.value = newDate;
-
     const multiStart = document.getElementById('multi_start_date');
     const recStart = document.getElementById('rec_start_date');
     const recEnds = document.getElementById('rec_ends');
-
     if (multiStart) multiStart.value = newDate;
     if (recStart) recStart.value = newDate;
     if (recEnds) recEnds.value = newDate;
-
     updateDisplayDate();
     toggleInputs();
   });
 
-  // Also update display text when switching input values manually
   document.getElementById('multi_start_date')?.addEventListener('change', updateDisplayDate);
   document.getElementById('rec_start_date')?.addEventListener('change', updateDisplayDate);
 
-  // Handle form submit to send event data via fetch POST
+  // --- MODIFIED FORM SUBMISSION ---
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
 
@@ -116,8 +189,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const title = document.getElementById('title').value.trim();
     const description = document.getElementById('description').value.trim();
     const priority = document.getElementById('priority').value;
-    const genre = document.getElementById('genre').value.trim();
-    const tags = document.getElementById('tags').value.trim();
+    const tags = document.getElementById('selected-tags-input').value; // MODIFIED: Get tags from hidden input
     const isPublic = document.getElementById('is_public').checked;
 
     let startTimeStr = null;
@@ -132,12 +204,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const date = document.getElementById('event_date_picker').value;
         const startTime = document.getElementById('start_time').value;
         const endTime = document.getElementById('end_time').value;
-
         if (!date || !startTime || !endTime) {
           alert('Please fill in date, start time, and end time.');
           return;
         }
-
         startTimeStr = `${date}T${startTime}`;
         endTimeStr = `${date}T${endTime}`;
       }
@@ -146,12 +216,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const startTime = document.getElementById('multi_start_time').value;
         const endDate = document.getElementById('multi_end_date').value;
         const endTime = document.getElementById('multi_end_time').value;
-
         if (!startDate || !startTime || !endDate || !endTime) {
           alert('Please fill in start date/time and end date/time for multi-day event.');
           return;
         }
-
         startTimeStr = `${startDate}T${startTime}`;
         endTimeStr = `${endDate}T${endTime}`;
       }
@@ -162,16 +230,12 @@ document.addEventListener('DOMContentLoaded', () => {
         repeatUnit = document.getElementById('rec_unit').value;
         repeatInterval = document.getElementById('rec_interval').value;
         repeatEnds = document.getElementById('rec_ends').value;
-      
         if (!startDate || !startTime || !endTime || !repeatUnit || !repeatInterval) {
           alert('Please fill in all required fields for recurring event.');
           return;
         }
-      
         startTimeStr = `${startDate}T${startTime}`;
         endTimeStr = `${startDate}T${endTime}`;
-
-        // Get checked weekdays if weekly recurrence
         if (repeatUnit === 'weekly') {
           repeatWeekdays = Array.from(document.querySelectorAll('#weekdaySelector input[type="checkbox"]:checked')).map(cb => cb.value);
           if (repeatWeekdays.length === 0) {
@@ -187,29 +251,25 @@ document.addEventListener('DOMContentLoaded', () => {
         title,
         description,
         priority: parseInt(priority),
-        genre,
-        tags,
+        // REMOVED: genre,
+        tags, // MODIFIED: Now uses the value from the hidden input
         is_public: isPublic,
         start_time: startTimeStr,
         end_time: endTimeStr,
       };
 
-      // Add recurring fields if applicable
       if (type === 'recurring') {
         payload.rec_unit = repeatUnit;
         payload.rec_interval = parseInt(repeatInterval);
         payload.rec_ends = repeatEnds || null;
         payload.rec_start_date = document.getElementById('rec_start_date').value;
-        payload.rec_weekdays = repeatWeekdays;  // keep weekdays array if any
+        payload.rec_weekdays = repeatWeekdays;
       }
 
       // Send POST request
       const response = await fetch('/event/create', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-          // Include CSRF token here if used
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
 
@@ -226,5 +286,4 @@ document.addEventListener('DOMContentLoaded', () => {
       console.error(err);
     }
   });
-
 });

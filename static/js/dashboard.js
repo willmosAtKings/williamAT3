@@ -500,9 +500,6 @@ function showEventDetails(event) {
   // Set description
   document.getElementById('eventDescription').textContent = event.description || 'No description provided.';
   
-  // Set genre
-  document.getElementById('eventGenre').textContent = event.genre || 'No category';
-  
   // Set tags
   const tagsContainer = document.getElementById('eventTags');
   tagsContainer.innerHTML = '';
