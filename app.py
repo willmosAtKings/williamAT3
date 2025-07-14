@@ -6,8 +6,6 @@ from extensions import db
 from datetime import datetime, timedelta
 from dateutil.relativedelta import relativedelta
 from sqlalchemy import or_
-
-# --- 1. IMPORT MIGRATE ---
 from flask_migrate import Migrate
 
 def create_app():
@@ -16,14 +14,11 @@ def create_app():
     app.secret_key = 'insanely-secret-key'
     
     db.init_app(app)
-
-    # --- 2. INITIALIZE MIGRATE ---
     migrate = Migrate(app, db)
 
     with app.app_context():
         from models.event import Event
         from models.user import User
-        # db.create_all() # Migrations will handle this
 
     @app.route('/')
     def index():
@@ -189,6 +184,7 @@ def create_app():
     def profile():
         user_id = session.get('user_id')
         if user_id:
+            from models.user import User
             user = db.session.get(User, user_id)
             return render_template('profile/info.html', user=user)
         return redirect('/login')
@@ -203,7 +199,35 @@ def create_app():
     
     @app.route('/profile/preferences')
     def preferences():
-        return render_template('profile/preferences.html')
+        from models.user import User
+        user_id = session.get('user_id')
+        if not user_id:
+            return redirect(url_for('login'))
+        
+        user = db.session.get(User, user_id)
+        # Pass the user's saved tags to the template
+        return render_template('profile/preferences.html', current_tags=user.profile_tags or '')
+
+    @app.route('/api/profile/tags', methods=['POST'])
+    def update_profile_tags():
+        from models.user import User
+        
+        if 'user_id' not in session:
+            return jsonify({'error': 'Unauthorized'}), 401
+
+        user = db.session.get(User, session['user_id'])
+        if not user:
+            return jsonify({'error': 'User not found'}), 401
+
+        data = request.get_json()
+        if data is None:
+            return jsonify({'error': 'Invalid JSON'}), 400
+            
+        new_tags = data.get('tags', '')
+        user.profile_tags = new_tags
+        db.session.commit()
+
+        return jsonify({'message': 'Your tags have been updated successfully!'}), 200
 
     @app.route('/api/events')
     def get_events():
@@ -217,31 +241,18 @@ def create_app():
         if not user:
             return jsonify({'error': 'User not found'}), 401
 
-        # --- THIS IS THE FIX ---
         if user.role == 'admin':
-            # Admins see all events, no filtering needed.
             query = Event.query
         else:
-            # For other users, build a filter based ONLY on their tags.
             user_tags = user.tags
-            
-            # This will hold the conditions for our query.
             filter_conditions = []
-            
-            # For each tag the user has...
             if user_tags:
                 for tag in user_tags:
-                    # ...add a condition to find events that contain that tag.
                     filter_conditions.append(Event.tags.like(f'%{tag}%'))
-            
-            # If a user has no valid tags, they can't see any tagged events.
-            # We create a query that will only return events if the conditions list is not empty.
             if filter_conditions:
                 query = Event.query.filter(or_(*filter_conditions))
             else:
-                # If there are no conditions, create a query that returns nothing.
                 query = Event.query.filter(False)
-        # --- END OF FIX ---
 
         range_type = request.args.get('range', 'month')
         start_str = request.args.get('start') or request.args.get('date')
