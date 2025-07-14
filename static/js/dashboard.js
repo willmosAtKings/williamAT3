@@ -392,7 +392,6 @@ function formatRecurrence(recurrence) {
   return pattern;
 }
 
-// --- UPDATED FUNCTION WITH PERMISSION LOGIC ---
 function showEventDetails(event) {
   // Get current user info from the data attributes on the body tag
   const currentUserId = parseInt(document.body.dataset.userId, 10);
@@ -449,10 +448,7 @@ function showEventDetails(event) {
   } else {
     editButton.style.display = 'none';
   }
-  // --- END PERMISSION LOGIC ---
 
-  // Delete button logic (can be the same as edit, or different)
-  // For now, we'll use the same logic for deleting.
   const deleteButton = document.getElementById('deleteEventBtn');
   if (canEdit) {
       deleteButton.style.display = 'inline-block';
