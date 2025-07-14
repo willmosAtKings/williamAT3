@@ -456,3 +456,88 @@ html, body {
   background-color: red;
   z-index: 10;
 }
+
+/* Timeline grid for day view */
+.timeline-grid {
+  display: grid;
+  grid-template-columns: 60px 1fr;
+  width: 100%;
+  border: 1px solid #ddd;
+  height: auto;
+}
+
+/* Hour labels column */
+.hour-labels {
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid #ddd;
+  background-color: #f9f9f9;
+}
+
+.hour-labels div {
+  height: 60px;
+  padding: 5px;
+  text-align: right;
+  border-bottom: 1px solid #ddd;
+  font-size: 0.8rem;
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-end;
+}
+
+/* Time slots column */
+.time-slots {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+}
+
+.hour-slot {
+  position: relative;
+  height: 60px;
+  border-bottom: 1px solid #eee;
+  padding: 2px;
+}
+
+/* Current time indicator */
+.current-time-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background-color: red;
+  z-index: 10;
+}
+
+/* Event styling in day view */
+#calendarContainer .event-item {
+  position: relative;
+  margin: 1px 0;
+  padding: 2px 5px;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  overflow: hidden;
+  background-color: #e3f2fd;
+  border-left: 3px solid #2196f3;
+}
+
+#calendarContainer .priority-1 {
+  background-color: #fff8e1;
+  border-left-color: #ffc107;
+}
+
+#calendarContainer .priority-2 {
+  background-color: #ffebee;
+  border-left-color: #f44336;
+}
+
+/* Fix the whitespace issue by ensuring container has proper height */
+#calendarContainer {
+  max-height: calc(100vh - 200px);
+  overflow-y: auto;
+}
+
+/* Ensure the timeline grid doesn't extend beyond the 24 hours */
+.timeline-grid {
+  height: fit-content;
+}
