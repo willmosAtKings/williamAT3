@@ -6,7 +6,8 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
   <link rel="stylesheet" href="/static/css/create_event.css" />
 </head>
-<body>
+<!-- Pass the user's role from the backend to a data attribute -->
+<body data-user-role="{{ user_role }}">
   <a href="/dashboard" class="back-button">← Back to Dashboard</a>
 
   <form id="eventForm">
@@ -90,22 +91,23 @@
       <option value="2">High</option>
     </select><br>
 
-    <div class="form-group">
-        <label>Tags</label>
-        <div class="mega-menu-container">
-            <div id="tag-selector-button" class="tag-selector-button">
-                <span>Select Tags...</span>
-                <i class="arrow down"></i>
+    <!-- This whole section will be hidden for students by the JS -->
+    <div id="tag-section">
+        <div class="form-group">
+            <label>Tags</label>
+            <div class="mega-menu-container">
+                <div id="tag-selector-button" class="tag-selector-button">
+                    <span>Select Tags...</span>
+                    <i class="arrow down"></i>
+                </div>
+                <div id="mega-menu-dropdown" class="mega-menu-dropdown">
+                    <!-- This will be populated by JavaScript -->
+                </div>
+                <input type="hidden" name="tags" id="selected-tags-input">
             </div>
-            <div id="mega-menu-dropdown" class="mega-menu-dropdown">
-                <!-- This will be populated by JavaScript -->
-            </div>
-            <input type="hidden" name="tags" id="selected-tags-input">
+            <div id="selected-tags-display" class="selected-tags-display"></div>
         </div>
-        <div id="selected-tags-display" class="selected-tags-display"></div>
     </div>
-
-    <!-- REMOVED 'is_public' CHECKBOX -->
 
     <button type="submit" id="submitBtn">Create Event</button>
   </form>

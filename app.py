@@ -5,7 +5,7 @@ import secrets
 from extensions import db
 from datetime import datetime, timedelta
 from dateutil.relativedelta import relativedelta
-from sqlalchemy import or_
+from sqlalchemy import or_, and_
 from flask_migrate import Migrate
 
 def create_app():
@@ -20,7 +20,7 @@ def create_app():
         from models.event import Event
         from models.user import User
 
-    # ... (routes for /, /dashboard, /login, /logout, /register remain the same) ...
+
     @app.route('/')
     def index():
         return render_template('login.html')
@@ -112,7 +112,6 @@ def create_app():
             return jsonify({'error': 'Unauthorized'}), 403
 
         if request.method == 'GET':
-            # Pass the user's role to the template so the UI can be adjusted.
             return render_template('create_event.html', user_role=user_role)
 
         if not request.is_json:
@@ -122,11 +121,10 @@ def create_app():
         
         tags = data.get('tags', '')
         if user_role == 'student':
-            tags = '' # Force no tags for student-created events, making them private.
-
+            tags = ''
+        
         event_type = data.get('event_type')
         if event_type == 'recurring':
-            # ... (recurring logic is fine, just uses the new 'tags' variable) ...
             required = ['title', 'start_time', 'end_time', 'rec_start_date', 'rec_ends', 'rec_interval', 'rec_unit']
             if not all(data.get(f) for f in required):
                 return jsonify({'error': 'Missing recurring event fields'}), 400
@@ -154,7 +152,7 @@ def create_app():
                     title=data['title'],
                     description=data.get('description', ''),
                     priority=int(data.get('priority', 0)),
-                    tags=tags, # Use the potentially modified tags
+                    tags=tags,
                     start_time=start_dt,
                     end_time=end_dt,
                     creator_id=session['user_id']
@@ -183,7 +181,7 @@ def create_app():
                 title=data['title'],
                 description=data.get('description', ''),
                 priority=int(data.get('priority', 0)),
-                tags=tags, # Use the potentially modified tags
+                tags=tags,
                 start_time=start_dt,
                 end_time=end_dt,
                 creator_id=session['user_id']
@@ -192,7 +190,6 @@ def create_app():
             db.session.commit()
             return jsonify({'message': 'Event created successfully', 'event_id': event.id}), 200
 
-    # ... (profile routes remain the same) ...
     @app.route('/profile/info')
     def profile():
         user_id = session.get('user_id')
@@ -216,7 +213,6 @@ def create_app():
         user_id = session.get('user_id')
         if not user_id:
             return redirect(url_for('login'))
-        
         user = db.session.get(User, user_id)
         return render_template('profile/preferences.html', current_tags=user.profile_tags or '')
 
@@ -252,10 +248,13 @@ def create_app():
             query = Event.query
         else:
             user_tags = user.tags
-            
-            filter_conditions = [
-                Event.creator_id == user.id
-            ]
+
+            private_event_condition = and_(
+                Event.creator_id == user.id,
+                or_(Event.tags == '', Event.tags == None)
+            )
+
+            filter_conditions = [private_event_condition]
             
             if user_tags:
                 for tag in user_tags:

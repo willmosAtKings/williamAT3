@@ -1,7 +1,22 @@
 document.addEventListener('DOMContentLoaded', () => {
   console.log("create_event.js loaded and DOM ready");
 
+  // --- ROLE-BASED UI ---
+  // Read the user's role from the data attribute on the body tag
+  const userRole = document.body.dataset.userRole;
+  const tagSection = document.getElementById('tag-section');
+
+  // If the user is a student, hide the entire tag selection UI.
+  // The backend will enforce privacy by ignoring any tags they might try to send.
+  if (userRole === 'student') {
+    if (tagSection) {
+      tagSection.style.display = 'none';
+    }
+  }
+  // --- END ROLE-BASED UI ---
+
   // --- MEGA MENU SETUP ---
+  // This structure is now only used by teachers/admins.
   const tagStructure = {
     "Audience": ["public", "student", "teacher", "admin"],
     "Year Level": ["year-7", "year-8", "year-9", "year-10", "year-11", "year-12"],
@@ -15,6 +30,7 @@ document.addEventListener('DOMContentLoaded', () => {
   let selectedTags = new Set();
 
   function buildMegaMenu() {
+    if (!megaMenuDropdown) return; // Don't run if the element doesn't exist
     megaMenuDropdown.innerHTML = '';
     for (const category in tagStructure) {
       const categoryDiv = document.createElement('div');
@@ -37,6 +53,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function updateSelectedTagsDisplay() {
+    if (!selectedTagsDisplay) return;
     selectedTagsDisplay.innerHTML = '';
     selectedTags.forEach(tag => {
       const pill = document.createElement('div');
@@ -44,48 +61,60 @@ document.addEventListener('DOMContentLoaded', () => {
       pill.innerHTML = `<span>${tag}</span><span class="remove-tag" data-tag="${tag}">×</span>`;
       selectedTagsDisplay.appendChild(pill);
     });
-    selectedTagsInput.value = Array.from(selectedTags).join(',');
+    if (selectedTagsInput) {
+      selectedTagsInput.value = Array.from(selectedTags).join(',');
+    }
   }
 
-  tagSelectorButton.addEventListener('click', () => {
-    megaMenuDropdown.classList.toggle('show');
-  });
+  if (tagSelectorButton) {
+    tagSelectorButton.addEventListener('click', () => {
+      megaMenuDropdown.classList.toggle('show');
+    });
+  }
 
-  megaMenuDropdown.addEventListener('click', (e) => {
-    if (e.target.classList.contains('mega-menu-tag')) {
-      const tag = e.target.dataset.tag;
-      if (selectedTags.has(tag)) {
+  if (megaMenuDropdown) {
+    megaMenuDropdown.addEventListener('click', (e) => {
+      if (e.target.classList.contains('mega-menu-tag')) {
+        const tag = e.target.dataset.tag;
+        if (selectedTags.has(tag)) {
+          selectedTags.delete(tag);
+          e.target.classList.remove('selected');
+        } else {
+          selectedTags.add(tag);
+          e.target.classList.add('selected');
+        }
+        updateSelectedTagsDisplay();
+      }
+    });
+  }
+
+  if (selectedTagsDisplay) {
+    selectedTagsDisplay.addEventListener('click', (e) => {
+      if (e.target.classList.contains('remove-tag')) {
+        const tag = e.target.dataset.tag;
         selectedTags.delete(tag);
-        e.target.classList.remove('selected');
-      } else {
-        selectedTags.add(tag);
-        e.target.classList.add('selected');
+        updateSelectedTagsDisplay();
+        const tagInMenu = megaMenuDropdown.querySelector(`.mega-menu-tag[data-tag="${tag}"]`);
+        if (tagInMenu) {
+          tagInMenu.classList.remove('selected');
+        }
       }
-      updateSelectedTagsDisplay();
-    }
-  });
-
-  selectedTagsDisplay.addEventListener('click', (e) => {
-    if (e.target.classList.contains('remove-tag')) {
-      const tag = e.target.dataset.tag;
-      selectedTags.delete(tag);
-      updateSelectedTagsDisplay();
-      const tagInMenu = megaMenuDropdown.querySelector(`.mega-menu-tag[data-tag="${tag}"]`);
-      if (tagInMenu) {
-        tagInMenu.classList.remove('selected');
-      }
-    }
-  });
+    });
+  }
 
   window.addEventListener('click', (e) => {
-    if (!e.target.closest('.mega-menu-container')) {
+    if (megaMenuDropdown && !e.target.closest('.mega-menu-container')) {
       megaMenuDropdown.classList.remove('show');
     }
   });
 
-  buildMegaMenu();
+  // Only build the menu if the section is visible (i.e., for non-students)
+  if (userRole !== 'student') {
+      buildMegaMenu();
+  }
   // --- END MEGA MENU SETUP ---
 
+  // --- EXISTING DATE/FORM LOGIC ---
   const urlParams = new URLSearchParams(window.location.search);
   const dateFromUrl = urlParams.get('date');
   const displayDateEl = document.getElementById('displayDate');
@@ -164,6 +193,7 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('multi_start_date')?.addEventListener('change', updateDisplayDate);
   document.getElementById('rec_start_date')?.addEventListener('change', updateDisplayDate);
 
+  // --- FORM SUBMISSION LOGIC ---
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
 
@@ -171,9 +201,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const title = document.getElementById('title').value.trim();
     const description = document.getElementById('description').value.trim();
     const priority = document.getElementById('priority').value;
-    const tags = document.getElementById('selected-tags-input').value;
     
-    // REMOVED: const isPublic = document.getElementById('is_public').checked;
+    // For students, this will be empty. For teachers, it gets the selected tags.
+    const tags = selectedTagsInput ? selectedTagsInput.value : '';
 
     let startTimeStr = null;
     let endTimeStr = null;
@@ -235,7 +265,6 @@ document.addEventListener('DOMContentLoaded', () => {
         description,
         priority: parseInt(priority),
         tags,
-        // REMOVED: is_public: isPublic,
         start_time: startTimeStr,
         end_time: endTimeStr,
       };
