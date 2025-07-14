@@ -541,3 +541,105 @@ html, body {
 .timeline-grid {
   height: fit-content;
 }
+
+/* Date navigation container */
+.date-navigation {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+/* Date display */
+.date-display {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 200px;
+}
+
+#currentDateDisplay {
+  margin: 0;
+  font-size: 1.2rem;
+  font-weight: 500;
+}
+
+/* Navigation arrows */
+.nav-arrow {
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  font-size: 1.2rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s;
+}
+
+.nav-arrow:hover {
+  background-color: #0056b3;
+}
+
+/* Update navbar to be sticky */
+.navbar {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background-color: #ffffff;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+/* Update nav-center to accommodate the date navigation */
+.nav-center {
+  display: flex;
+  justify-content: center;
+  flex-grow: 1;
+}
+
+/* Calendar view dropdown */
+#calendarView {
+  margin-top: 5px;
+  padding: 4px 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background-color: #fff;
+  font-size: 0.9rem;
+}
+
+/* Remove the date header from day view */
+#calendarContainer h3 {
+  display: none;
+}
+
+/* Remove the space where calendar-controls was */
+.calendar-container {
+  padding-top: 0; /* Reduce top padding */
+  margin-top: 0; /* Remove any margin */
+}
+
+/* Ensure the calendar grid starts right after navbar */
+.main-content {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* Adjust the calendarContainer to start at the top */
+#calendarContainer {
+  margin-top: 0;
+  padding-top: 10px;
+}
+
+/* Remove any margin from the timeline-grid */
+.timeline-grid {
+  margin-top: 0;
+}
+
+/* If there was a specific height for calendar-controls, adjust the container height */
+.calendar-container, #calendarContainer {
+  height: calc(100vh - 64px); /* Adjust based on navbar height */
+}

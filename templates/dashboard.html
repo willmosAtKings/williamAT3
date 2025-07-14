@@ -21,9 +21,24 @@
       <div class="nav-left">
         <button class="create-button"><i class="fas fa-plus"></i> Create</button>
       </div>
+      
       <div class="nav-center">
-        <h1>Calendar</h1>
+        <div class="date-navigation">
+          <button id="prevMonth" class="nav-arrow">←</button>
+          
+          <div class="date-display">
+            <h2 id="currentDateDisplay"></h2>
+            <select id="calendarView">
+              <option value="month">Month</option>
+              <option value="week">Week</option>
+              <option value="day">Day</option>
+            </select>
+          </div>
+          
+          <button id="nextMonth" class="nav-arrow">→</button>
+        </div>
       </div>
+      
       <div class="user-menu">
         <div class="user-profile" onclick="document.querySelector('.menu-dropdown').classList.toggle('show')">
           <img src="/static/images/profile-placeholder.svg" alt="User Avatar" class="avatar" />
@@ -39,21 +54,7 @@
         </div>
       </div>
     </div>
-
-    <!-- buttons to look back and forth between months-->
-
     
-    <div class="calendar-controls">
-      <button id="prevMonth">&#8592;</button>
-      <h2 id="monthYear"></h2>
-      <select id="calendarView">
-        <option value="month">Month</option>
-        <option value="week">Week</option>
-        <option value="day">Day</option>
-      </select>
-      <button id="nextMonth">&#8594;</button>
-    </div>
-
     <div class="calendar-container">
       <div class="calendar-grid">
         <div class="day-header">Sun</div>
@@ -63,7 +64,6 @@
         <div class="day-header">Thu</div>
         <div class="day-header">Fri</div>
         <div class="day-header">Sat</div>
-
       </div>
     </div>
 

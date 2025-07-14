@@ -4,13 +4,72 @@ document.querySelector('.create-button').addEventListener('click', function(e) {
   window.location.href = '/event/create';
 });
 
-// Function to load and display events on the dashboard
-async function loadEvents() {
+const calendarGrid = document.querySelector('.calendar-grid');
+let currentDate = new Date();
+
+// Function to update the date display based on current view and date
+function updateDateDisplay() {
+  const view = document.getElementById('calendarView').value;
+  const dateDisplay = document.getElementById('currentDateDisplay');
+  
+  if (view === 'month') {
+    // Show month and year for month view
+    dateDisplay.textContent = currentDate.toLocaleString('default', {
+      month: 'long',
+      year: 'numeric'
+    });
+  } else if (view === 'week') {
+    // Show week range for week view
+    const weekStart = new Date(currentDate);
+    weekStart.setDate(currentDate.getDate() - currentDate.getDay());
+    
+    const weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekStart.getDate() + 6);
+    
+    const formatOptions = { month: 'short', day: 'numeric' };
+    const startStr = weekStart.toLocaleDateString('en-US', formatOptions);
+    const endStr = weekEnd.toLocaleDateString('en-US', formatOptions);
+    
+    dateDisplay.textContent = `${startStr} - ${endStr}, ${currentDate.getFullYear()}`;
+  } else if (view === 'day') {
+    // Show full date for day view
+    dateDisplay.textContent = currentDate.toLocaleDateString('en-US', {
+      weekday: 'long',
+      month: 'long',
+      day: 'numeric',
+      year: 'numeric'
+    });
+  }
+}
+
+// Function to load and display events based on current view
+async function loadEventsForCurrentView() {
+  const view = document.getElementById('calendarView').value;
+  
   try {
-    const response = await fetch('/api/events');
+    let start;
+    if (view === 'month') {
+      // First day of month for month view
+      start = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+    } else {
+      // Current date for day/week view
+      start = new Date(currentDate);
+    }
+    
+    const startStr = start.toISOString().split('T')[0];
+    const response = await fetch(`/api/events?range=${view}&start=${startStr}`);
+    
     if (response.ok) {
       const events = await response.json();
-      renderMonthCalendar(currentDate, events);
+      
+      if (view === 'month') {
+        renderMonthCalendar(currentDate, events);
+      } else {
+        renderCalendar(events, view);
+      }
+      
+      // Update the date display after rendering
+      updateDateDisplay();
     } else {
       console.error('Failed to load events');
     }
@@ -19,13 +78,8 @@ async function loadEvents() {
   }
 }
 
-const calendarGrid = document.querySelector('.calendar-grid');
-const monthYear = document.getElementById('monthYear');
-
-let currentDate = new Date();
-
 function renderMonthCalendar(date = new Date(), events = []) {
-  console.log('render MonthCalendar called'); //
+  console.log('render MonthCalendar called');
   const calendarGrid = document.querySelector('.calendar-grid');
 
   // Clear all children (headers + days)
@@ -45,10 +99,6 @@ function renderMonthCalendar(date = new Date(), events = []) {
   const totalDays = new Date(year, month + 1, 0).getDate();
   const firstDayOfMonth = new Date(year, month, 1).getDay();
 
-  monthYear.textContent = date.toLocaleString('default', {
-    month: 'long',
-    year: 'numeric',
-  });
 
   for (let day = 1; day <= totalDays; day++) {
     const cell = document.createElement('div');
@@ -118,15 +168,15 @@ function renderCalendar(events, view) {
     const selectedDay = currentDate.toDateString();
     const hours = [...Array(24).keys()];
 
-    // Add date display at the top
-    const dateHeader = document.createElement('h3');
-    dateHeader.textContent = currentDate.toLocaleDateString('en-US', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
-    container.appendChild(dateHeader);
+    // We don't need this date header anymore since it's in the navbar
+    // const dateHeader = document.createElement('h3');
+    // dateHeader.textContent = currentDate.toLocaleDateString('en-US', {
+    //   weekday: 'long',
+    //   year: 'numeric',
+    //   month: 'long',
+    //   day: 'numeric'
+    // });
+    // container.appendChild(dateHeader);
 
     const grid = document.createElement('div');
     grid.className = 'timeline-grid';
@@ -208,7 +258,6 @@ function renderCalendar(events, view) {
   }
 }
 
-
 // Line which shows current time on calendar (day/week)
 function addCurrentTimeLine(container) {
   const now = new Date();
@@ -224,7 +273,6 @@ function addCurrentTimeLine(container) {
   container.appendChild(line);
 }
 
-
 // Helper function to format time
 function formatTime(timeString) {
   const date = new Date(timeString);
@@ -237,18 +285,6 @@ function formatTime(timeString) {
 
 document.getElementById('calendarView').addEventListener('change', async (e) => {
   const view = e.target.value;
-  
-  // Update button labels based on view
-  if (view === 'month') {
-    document.getElementById('prevMonth').textContent = '←';
-    document.getElementById('nextMonth').textContent = '→';
-  } else if (view === 'week') {
-    document.getElementById('prevMonth').textContent = '←';
-    document.getElementById('nextMonth').textContent = '→';
-  } else if (view === 'day') {
-    document.getElementById('prevMonth').textContent = '←';
-    document.getElementById('nextMonth').textContent = '→';
-  }
   
   // Clear old content
   document.querySelector('.calendar-grid').innerHTML = '';
@@ -263,34 +299,14 @@ document.getElementById('calendarView').addEventListener('change', async (e) => 
     document.getElementById('calendarContainer').style.display = 'block';
   }
 
+  // Update the date display
+  updateDateDisplay();
+  
   // Load events for the current view
   loadEventsForCurrentView();
-
-
-  try {
-    const res = await fetch(`/api/events?range=${view}&start=${start}`);
-    const events = await res.json();
-
-    if (view === 'month') {
-      renderMonthCalendar(currentDate, events);
-    } else {
-      renderCalendar(events, view);
-    }
-  } catch (err) {
-    console.error("Failed to load events", err);
-  }
 });
 
-
-
-
-
-// Load events when the page loads
-document.addEventListener('DOMContentLoaded', function() {
-  loadEvents();
-});
-
-// Update the click handlers for prev/next buttons
+// Update the navigation buttons
 document.getElementById('prevMonth').addEventListener('click', () => {
   const view = document.getElementById('calendarView').value;
   
@@ -302,6 +318,7 @@ document.getElementById('prevMonth').addEventListener('click', () => {
     currentDate.setDate(currentDate.getDate() - 7);
   }
   
+  updateDateDisplay();
   loadEventsForCurrentView();
 });
 
@@ -316,39 +333,12 @@ document.getElementById('nextMonth').addEventListener('click', () => {
     currentDate.setDate(currentDate.getDate() + 7);
   }
   
+  updateDateDisplay();
   loadEventsForCurrentView();
 });
 
-// Helper function to load events based on current view
-async function loadEventsForCurrentView() {
-  const view = document.getElementById('calendarView').value;
-  
-  try {
-    let start;
-    if (view === 'month') {
-      // First day of month for month view
-      start = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
-    } else {
-      // Current date for day/week view
-      start = new Date(currentDate);
-    }
-    
-    const startStr = start.toISOString().split('T')[0];
-    const response = await fetch(`/api/events?range=${view}&start=${startStr}`);
-    
-    if (response.ok) {
-      const events = await response.json();
-      
-      if (view === 'month') {
-        renderMonthCalendar(currentDate, events);
-      } else {
-        renderCalendar(events, view);
-      }
-    } else {
-      console.error('Failed to load events');
-    }
-  } catch (error) {
-    console.error('Error loading events:', error);
-  }
-}
-
+// Call this on page load
+document.addEventListener('DOMContentLoaded', function() {
+  updateDateDisplay();
+  loadEventsForCurrentView();
+});
