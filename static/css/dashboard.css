@@ -331,11 +331,13 @@ html, body {
   display: flex;
   gap: 1rem;
   flex-wrap: wrap;
-  padding-top: 15px; /* Added top padding */
-  margin-top: 10px; /* Added top margin */
+  padding-top: 15px; /* Same as calendar-container */
+  margin-top: 10px; /* Same as calendar-container */
   max-height: calc(100vh - 200px);
   overflow-y: auto;
   position: relative;
+  flex: 1;
+  box-sizing: border-box;
 }
 
 .day-column, .hour-slot {
@@ -359,6 +361,8 @@ html, body {
   width: 100%;
   border: 1px solid #ddd;
   height: fit-content;
+  margin-top: 0;
+  margin-bottom: 20px;
 }
 
 .hour-labels {
@@ -492,6 +496,8 @@ html, body {
   width: 100%;
   border: 1px solid #ddd;
   height: fit-content;
+  margin-top: 0;
+  margin-bottom: 20px;
 }
 
 .week-time-column {
@@ -564,4 +570,9 @@ html, body {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* Remove any extra padding that might be causing whitespace */
+#calendarContainer > * {
+  margin-top: 0;
 }
