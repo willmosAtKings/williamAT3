@@ -12,28 +12,34 @@ class User(db.Model):
     password_hash = db.Column(db.String(200), nullable=False)
     role = db.Column(db.String(20), nullable=False)  # 'student', 'teacher', 'admin'
 
+    # --- NEW COLUMN ---
+    # This will store user-chosen tags like "chess-club,year-12" as a string.
+    profile_tags = db.Column(db.String(255), nullable=True)
+    # --- END NEW COLUMN ---
+
     session_token = db.Column(db.String(64), unique=True, index=True)
     session_expiry = db.Column(db.DateTime, nullable=True)
     csrf_token = db.Column(db.String(64), unique=True, index=True)
 
     events = db.relationship("Event", backref="creator", lazy=True)
 
-    # --- NEW ---
-    # This property will give us a list of tags for the user.
+    # --- UPDATED PROPERTY ---
+    # This property now combines role-based tags with profile tags.
     @property
     def tags(self):
-        # All users can see public events
-        user_tags = ['public'] 
+        # Start with a set to automatically handle duplicates.
+        # Add the 'public' tag and the user's role as a tag.
+        user_tags_set = {'public', self.role.lower()}
         
-        # Add role-specific tag
-        if self.role:
-            user_tags.append(self.role.lower()) # e.g., 'student', 'teacher'
+        # If the user has saved any profile tags, add them to the set.
+        if self.profile_tags:
+            # Split the string into a list, stripping any extra whitespace.
+            extra_tags = [tag.strip() for tag in self.profile_tags.split(',')]
+            user_tags_set.update(extra_tags)
             
-        # Admins can see everything, so we can give them a wildcard
-        # or handle this in the API logic. For now, 'admin' tag is enough.
-        
-        return user_tags
-    # --- END NEW ---
+        # Return the final, unique list of tags.
+        return list(user_tags_set)
+    # --- END UPDATED PROPERTY ---
 
     def __init__(self, username, email, password, role):
         self.username = username.strip()
