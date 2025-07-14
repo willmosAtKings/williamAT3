@@ -211,7 +211,7 @@ html, body {
   height: 100%;
   box-sizing: border-box;
   overflow: hidden;
-  position: relative;
+  position: relative; /* Important for absolute positioning of the add button */
   cursor: pointer;
   transition: background-color 0.2s;
 }
@@ -221,8 +221,14 @@ html, body {
   box-shadow: 0 0 0 2px #007bff inset;
 }
 
+/* Position the add button in the bottom right corner */
 .add-event-btn {
+  position: absolute;
+  bottom: 5px;
+  right: 5px;
   background-color: #007bff;
+  color: white;
+  border: none;
   border-radius: 50%;
   width: 24px;
   height: 24px;
@@ -231,10 +237,19 @@ html, body {
   font-size: 16px;
   padding: 0;
   display: none;
+  z-index: 10; /* Ensure it's above events */
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2); /* Add a subtle shadow */
 }
 
 .day-cell:hover .add-event-btn {
   display: block;
+}
+
+/* Make sure events don't overlap with the add button */
+.day-cell .event-item {
+  margin-bottom: 2px;
+  max-width: calc(100% - 10px); /* Leave some space for the button */
 }
 
 /* ===== EVENT STYLING ===== */
@@ -395,24 +410,16 @@ html, body {
 
 .day-name {
   font-size: 0.8rem;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 .day-number {
   font-size: 1rem;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 /* Common styles for time column */
 .time-column {
   background-color: #f9f9f9;
-  position: relative;
-  width: 60px;
-  min-width: 60px;
-  max-width: 60px;
-  flex-shrink: 0;
+  border-right: 1px solid #ddd;
 }
 
 .hour-label {
@@ -420,34 +427,25 @@ html, body {
   padding: 5px;
   text-align: right;
   border-bottom: 1px solid #ddd;
-  border-right: 1px solid #ddd;
   font-size: 0.8rem;
   color: #666;
   box-sizing: border-box;
+  padding-right: 8px;
 }
 
-/* Day and week view layout */
+/* Day column styles */
 .day-column {
   position: relative;
-  display: flex;
-  flex-direction: column;
   border-right: 1px solid #eee;
-  min-width: 0;
-  overflow: hidden;
-}
-
-.week-grid .day-column {
-  max-width: calc(100% / 7);
 }
 
 .day-column:last-child {
   border-right: none;
 }
 
+/* Hour cells */
 .hours-container {
   position: relative;
-  height: calc(24 * 60px); /* 24 hours * 60px per hour */
-  z-index: 1;
 }
 
 .hour-cell {
@@ -460,17 +458,18 @@ html, body {
   background-color: #fffde7;
 }
 
+/* Events container */
 .events-container {
   position: absolute;
   top: 40px; /* Header height */
   left: 0;
   right: 0;
   bottom: 0;
-  z-index: 2;
-  pointer-events: none; /* Allow clicks to pass through to hour cells */
+  pointer-events: none;
 }
 
-.event-item {
+/* Event styling for day/week view */
+.events-container .event-item {
   position: absolute;
   left: 4px;
   right: 4px;
@@ -480,17 +479,18 @@ html, body {
   padding: 4px;
   font-size: 0.8rem;
   overflow: hidden;
-  pointer-events: auto; /* Make events clickable */
+  pointer-events: auto;
   z-index: 5;
 }
 
+/* Current time indicator */
 .current-time-line {
   position: absolute;
   left: 0;
   right: 0;
   height: 2px;
   background-color: #e53935;
-  z-index: 10;
+  z-index: 100; /* Ensure it's on top of everything */
   pointer-events: none;
 }
 

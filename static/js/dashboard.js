@@ -350,7 +350,6 @@ function renderCalendar(events, view) {
         const effectiveEnd = evEnd > dayEnd ? dayEnd : evEnd;
         
         // Calculate position and height
-        const dayHeight = 24 * 60; // 24 hours * 60px per hour
         const startMinutes = effectiveStart.getHours() * 60 + effectiveStart.getMinutes();
         const endMinutes = effectiveEnd.getHours() * 60 + effectiveEnd.getMinutes();
         
@@ -374,27 +373,29 @@ function renderCalendar(events, view) {
       
       dayColumn.appendChild(eventsContainer);
       
+      // Add current time indicator if this is today
+      if (dayDate.toDateString() === now.toDateString()) {
+        const currentHour = now.getHours();
+        const currentMinute = now.getMinutes();
+        
+        // Calculate position in minutes from the top
+        const timePosition = currentHour * 60 + currentMinute;
+        
+        const timeLine = document.createElement('div');
+        timeLine.className = 'current-time-line';
+        timeLine.style.top = `${timePosition + 40}px`; // 40px for header
+        
+        // Make sure the line is on top of everything
+        timeLine.style.zIndex = '100';
+        
+        dayColumn.appendChild(timeLine);
+      }
+      
       grid.appendChild(dayColumn);
     }
     container.appendChild(grid);
-
-    // Add current time indicator
-    const todayColumn = Array.from(grid.querySelectorAll('.day-column .day-header-label.today')).pop()?.parentElement;
-    if (todayColumn) {
-      const currentHour = now.getHours();
-      const currentMinute = now.getMinutes();
-      
-      // Calculate position in minutes from the top
-      const timePosition = currentHour * 60 + currentMinute;
-      
-      const timeLine = document.createElement('div');
-      timeLine.className = 'current-time-line';
-      timeLine.style.top = `${timePosition}px`;
-      todayColumn.appendChild(timeLine);
-    }
   }
 }
-
 
 // Helper function to format time
 function formatTime(timeString) {
