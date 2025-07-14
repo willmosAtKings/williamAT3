@@ -202,15 +202,22 @@ def create_app():
             try:
                 start_date = datetime.strptime(data['rec_start_date'], "%Y-%m-%d")
                 end_date = datetime.strptime(data['rec_ends'], "%Y-%m-%d")
-                start_time = datetime.strptime(data['start_time'], "%H:%M").time()
-                end_time = datetime.strptime(data['end_time'], "%H:%M").time()
+                start_time = datetime.fromisoformat(data['start_time']).time()
+                end_time = datetime.fromisoformat(data['end_time']).time()
                 interval = int(data['rec_interval'])
                 unit = data['rec_unit']
+                weekdays_list = data.get('rec_weekdays', [])  # Optional, only needed for weekly
             except Exception as e:
                 return jsonify({'error': f'Invalid recurring event format: {str(e)}'}), 400
 
             current = start_date
             while current <= end_date:
+                if unit == 'weekly' and weekdays_list:
+                    # Only add events on selected weekdays
+                    if current.strftime('%a').lower()[:3] not in [day.lower()[:3] for day in weekdays_list]:
+                        current += timedelta(days=1)
+                        continue
+
                 start_dt = datetime.combine(current, start_time)
                 end_dt = datetime.combine(current, end_time)
 
@@ -227,10 +234,11 @@ def create_app():
                 )
                 db.session.add(event)
 
+                # Increment current date
                 if unit == 'daily':
                     current += timedelta(days=interval)
                 elif unit == 'weekly':
-                    current += timedelta(weeks=interval)
+                    current += timedelta(days=1)  # we loop day-by-day and filter by weekday
                 elif unit == 'monthly':
                     current += relativedelta(months=interval)
                 else:
@@ -238,6 +246,8 @@ def create_app():
 
             db.session.commit()
             return jsonify({'message': 'Recurring events created successfully'}), 200
+
+
 
         else:
             # Single-day or multi-day event

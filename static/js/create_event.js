@@ -168,7 +168,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       // Prepare JSON payload
       const payload = {
-        type,
+        event_type: type,
         title,
         description,
         priority: parseInt(priority),
@@ -181,10 +181,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
       // Add recurring fields if applicable
       if (type === 'recurring') {
-        payload.repeat_unit = repeatUnit;
-        payload.repeat_interval = parseInt(repeatInterval);
-        payload.repeat_ends = repeatEnds || null;
-        payload.repeat_weekdays = repeatWeekdays;
+        payload.rec_unit = repeatUnit;
+        payload.rec_interval = parseInt(repeatInterval);
+        payload.rec_ends = repeatEnds || null;
+        payload.rec_start_date = document.getElementById('rec_start_date').value;
+        payload.rec_weekdays = repeatWeekdays;  // keep weekdays array if any
       }
 
       // Send POST request
