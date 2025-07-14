@@ -441,3 +441,38 @@ html, body {
   background-color: #fff;
   font-size: 0.9rem;
 }
+
+/* Style for the current hour's cell */
+.hour-cell-current {
+  background-color: #fffde7; /* A very light yellow */
+}
+
+/* Style for the 24:00 label at the bottom */
+.hour-label-end {
+  height: auto; /* Let content define height */
+  border-bottom: none; /* No bottom border */
+  padding: 5px;
+  text-align: right;
+  font-size: 0.8rem;
+  color: #666;
+  box-sizing: border-box;
+  padding-right: 8px;
+  position: relative;
+  top: -10px; /* Nudge it up to align with the grid's final line */
+}
+
+/* Corrected red line positioning */
+.current-time-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background-color: #e53935; /* A slightly darker red */
+  z-index: 10;
+  pointer-events: none; /* Make sure it doesn't block clicks on events */
+}
+
+/* Ensure day column can contain the positioned red line */
+.day-column {
+  position: relative; 
+}

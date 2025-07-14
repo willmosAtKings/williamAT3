@@ -136,11 +136,17 @@ function renderCalendar(events, view) {
       hourLabel.textContent = `${hour.toString().padStart(2, '0')}:00`;
       timeColumn.appendChild(hourLabel);
     });
+    // The 24:00 label is removed from here
     grid.appendChild(timeColumn);
 
     // Determine loop for days (1 for day view, 7 for week view)
     const daysToRender = view === 'day' ? 1 : 7;
-    const startDay = view === 'day' ? currentDate : new Date(currentDate.setDate(currentDate.getDate() - currentDate.getDay()));
+    const startDay = new Date(currentDate);
+    if (view === 'week') {
+        startDay.setDate(currentDate.getDate() - currentDate.getDay());
+    }
+
+    const now = new Date();
 
     for (let i = 0; i < daysToRender; i++) {
       const dayDate = new Date(startDay);
@@ -151,7 +157,7 @@ function renderCalendar(events, view) {
       
       const dayHeader = document.createElement('div');
       dayHeader.className = 'grid-header day-header-label';
-      if (dayDate.toDateString() === new Date().toDateString()) {
+      if (dayDate.toDateString() === now.toDateString()) {
         dayHeader.classList.add('today');
       }
       dayHeader.innerHTML = `<div class="day-name">${dayDate.toLocaleDateString('en-US', { weekday: 'short' })}</div><div class="day-number">${dayDate.getDate()}</div>`;
@@ -160,6 +166,10 @@ function renderCalendar(events, view) {
       hours.forEach(hour => {
         const hourCell = document.createElement('div');
         hourCell.className = 'hour-cell';
+        
+        if (dayDate.toDateString() === now.toDateString() && hour === now.getHours()) {
+            hourCell.classList.add('hour-cell-current');
+        }
         
         const dayEvents = events.filter(ev => {
           const evStart = new Date(ev.start_time);
@@ -178,18 +188,26 @@ function renderCalendar(events, view) {
           const item = document.createElement('div');
           item.className = `event-item priority-${ev.priority || 0}`;
           
-          const startMinutes = evStart.getMinutes();
-          const endMinutes = evEnd.getMinutes();
-          
-          if (evStart.getHours() === hour) {
-            item.style.top = `${(startMinutes / 60) * 100}%`;
-            const duration = (evEnd.getTime() - evStart.getTime()) / (1000 * 60);
-            item.style.height = `${(duration / 60) * 100}%`;
-          } else { // Event starts before this hour
-            item.style.top = '0%';
-            const duration = (evEnd.getTime() - new Date(dayDate.setHours(hour, 0, 0, 0)).getTime()) / (1000 * 60);
-            item.style.height = `${(duration / 60) * 100}%`;
+          let topPercent = 0;
+          let heightPercent = 0;
+
+          if (evStart.getHours() < hour) {
+            topPercent = 0;
+          } else {
+            topPercent = (evStart.getMinutes() / 60) * 100;
           }
+
+          if (evEnd.getHours() > hour) {
+            heightPercent = 100 - topPercent;
+          } else {
+            const durationMinutes = (evEnd.getTime() - evStart.getTime()) / (1000 * 60);
+            const startMinutesInHour = evStart.getHours() < hour ? 0 : evStart.getMinutes();
+            const durationInHour = (evEnd.getMinutes() - startMinutesInHour);
+            heightPercent = (durationInHour / 60) * 100;
+          }
+
+          item.style.top = `${topPercent}%`;
+          item.style.height = `${heightPercent}%`;
           
           item.innerHTML = `<div class="event-title">${ev.title}</div><div class="event-time">${formatTime(ev.start_time)}</div>`;
           hourCell.appendChild(item);
@@ -201,15 +219,18 @@ function renderCalendar(events, view) {
     container.appendChild(grid);
 
     // Add current time indicator
-    const now = new Date();
-    const todayColumn = Array.from(grid.querySelectorAll('.day-column .day-header-label')).find(h => h.classList.contains('today'));
+    const todayColumn = Array.from(grid.querySelectorAll('.day-column .day-header-label.today')).pop()?.parentElement;
     if (todayColumn) {
-      const parentColumn = todayColumn.parentElement;
-      const timePosition = (now.getHours() * 60 + now.getMinutes()) / (24 * 60) * 100;
+      const now = new Date();
+      const currentHour = now.getHours();
+      const currentMinute = now.getMinutes();
+      
+      const timePosition = 40 + (currentHour * 60) + (currentMinute);
+      
       const timeLine = document.createElement('div');
       timeLine.className = 'current-time-line';
-      timeLine.style.top = `calc(${timePosition}% + 40px)`; // 40px is header height
-      parentColumn.appendChild(timeLine);
+      timeLine.style.top = `${timePosition}px`;
+      todayColumn.appendChild(timeLine);
     }
   }
 }
