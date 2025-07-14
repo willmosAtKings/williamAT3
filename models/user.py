@@ -18,6 +18,23 @@ class User(db.Model):
 
     events = db.relationship("Event", backref="creator", lazy=True)
 
+    # --- NEW ---
+    # This property will give us a list of tags for the user.
+    @property
+    def tags(self):
+        # All users can see public events
+        user_tags = ['public'] 
+        
+        # Add role-specific tag
+        if self.role:
+            user_tags.append(self.role.lower()) # e.g., 'student', 'teacher'
+            
+        # Admins can see everything, so we can give them a wildcard
+        # or handle this in the API logic. For now, 'admin' tag is enough.
+        
+        return user_tags
+    # --- END NEW ---
+
     def __init__(self, username, email, password, role):
         self.username = username.strip()
         self.email = email.strip()
@@ -33,7 +50,7 @@ class User(db.Model):
 
     def generate_session_token(self):
         self.session_token = secrets.token_hex(32)
-        self.session_expiry = datetime.utcnow() + timedelta(hours=2)  # Token valid for 2 hours
+        self.session_expiry = datetime.utcnow() + timedelta(hours=2)
 
     def validate_session_token(self, token):
         return (
