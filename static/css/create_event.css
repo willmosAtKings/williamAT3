@@ -101,3 +101,15 @@ body {
     background-color: #d2e3fc;
   }
   
+  .weekday-checkboxes {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 5px;
+  }
+  .weekday-checkboxes label {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  

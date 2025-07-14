@@ -57,16 +57,32 @@ document.addEventListener('DOMContentLoaded', () => {
   // Event type toggle
   const toggleInputs = () => {
     const type = document.getElementById('event_type').value;
-
+    const recUnit = document.getElementById('rec_unit')?.value;
+  
     document.getElementById('singleDayInputs').style.display = type === 'single' ? 'block' : 'none';
     document.getElementById('multiDayInputs').style.display = type === 'multi' ? 'block' : 'none';
     document.getElementById('recurringDayInputs').style.display = type === 'recurring' ? 'block' : 'none';
-
+  
+    // If recurring + weekly → show checkboxes
+    const weekdaySection = document.getElementById('weekdaySelector');
+    if (type === 'recurring' && recUnit === 'weekly') {
+      weekdaySection.style.display = 'block';
+    } else {
+      weekdaySection.style.display = 'none';
+    }
+  
     updateDisplayDate();
   };
-
-  document.getElementById('event_type').addEventListener('change', toggleInputs);
-  toggleInputs(); // Run on load
+  
+  // Attach this event handler AFTER DOM loads
+  document.getElementById('event_type')?.addEventListener('change', toggleInputs);
+  
+  // Also recheck weekday display if the repeat unit changes
+  document.getElementById('rec_unit')?.addEventListener('change', toggleInputs);
+  
+  // Run on load
+  toggleInputs();
+  
 
   // Update date if sent from dashboard via JS event
   window.addEventListener('changeCreateEventDate', (e) => {
@@ -141,24 +157,23 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       else if (type === 'recurring') {
         const startDate = document.getElementById('rec_start_date').value;
-        const startTime = document.getElementById('start_time').value;
-        const endTime = document.getElementById('end_time').value;
+        const startTime = document.getElementById('start_time_rec').value;
+        const endTime = document.getElementById('end_time_rec').value;
         repeatUnit = document.getElementById('rec_unit').value;
         repeatInterval = document.getElementById('rec_interval').value;
         repeatEnds = document.getElementById('rec_ends').value;
-
+      
         if (!startDate || !startTime || !endTime || !repeatUnit || !repeatInterval) {
           alert('Please fill in all required fields for recurring event.');
           return;
         }
-
-        // Compose start and end times for first event occurrence
+      
         startTimeStr = `${startDate}T${startTime}`;
         endTimeStr = `${startDate}T${endTime}`;
 
         // Get checked weekdays if weekly recurrence
         if (repeatUnit === 'weekly') {
-          repeatWeekdays = Array.from(document.querySelectorAll('#recurringDayInputs input[type="checkbox"]:checked')).map(cb => cb.value);
+          repeatWeekdays = Array.from(document.querySelectorAll('#weekdaySelector input[type="checkbox"]:checked')).map(cb => cb.value);
           if (repeatWeekdays.length === 0) {
             alert('Please select at least one weekday for weekly recurring event.');
             return;
