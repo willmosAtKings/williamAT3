@@ -244,6 +244,148 @@ function renderCalendar(events, view) {
     container.appendChild(grid);
 
     addCurrentTimeLine(container);
+  } 
+  else if (view === 'week') {
+    const hours = [...Array(24).keys()];
+    
+    // Get the start of the week (Sunday)
+    const weekStart = new Date(currentDate);
+    weekStart.setDate(currentDate.getDate() - currentDate.getDay());
+    
+    // Create the week grid container
+    const weekGrid = document.createElement('div');
+    weekGrid.className = 'week-grid';
+    
+    // Create the time column (leftmost column)
+    const timeColumn = document.createElement('div');
+    timeColumn.className = 'week-time-column';
+    
+    // Add header to time column
+    const timeHeader = document.createElement('div');
+    timeHeader.className = 'week-header time-header';
+    timeHeader.innerHTML = ' '; // Empty header for time column
+    timeColumn.appendChild(timeHeader);
+    
+    // Add hour labels to time column
+    hours.forEach(hour => {
+      const hourLabel = document.createElement('div');
+      hourLabel.className = 'week-hour-label';
+      hourLabel.textContent = `${hour.toString().padStart(2, '0')}:00`;
+      timeColumn.appendChild(hourLabel);
+    });
+    
+    weekGrid.appendChild(timeColumn);
+    
+    // Create day columns
+    for (let i = 0; i < 7; i++) {
+      const dayDate = new Date(weekStart);
+      dayDate.setDate(weekStart.getDate() + i);
+      
+      const dayColumn = document.createElement('div');
+      dayColumn.className = 'week-day-column';
+      
+      // Add day header
+      const dayHeader = document.createElement('div');
+      dayHeader.className = 'week-header';
+      
+      // Check if this is today
+      const isToday = dayDate.toDateString() === new Date().toDateString();
+      if (isToday) {
+        dayHeader.classList.add('today');
+      }
+      
+      dayHeader.innerHTML = `
+        <div class="week-day-name">${dayDate.toLocaleDateString('en-US', { weekday: 'short' })}</div>
+        <div class="week-day-number">${dayDate.getDate()}</div>
+      `;
+      dayColumn.appendChild(dayHeader);
+      
+      // Add hour cells for this day
+      hours.forEach(hour => {
+        const hourCell = document.createElement('div');
+        hourCell.className = 'week-hour-cell';
+        
+        // Filter events for this specific day and hour
+        const dayEvents = events.filter(ev => {
+          const evStart = new Date(ev.start_time);
+          const evEnd = new Date(ev.end_time);
+          
+          // Check if event is on this day
+          if (evStart.toDateString() !== dayDate.toDateString() && 
+              evEnd.toDateString() !== dayDate.toDateString()) {
+            return false;
+          }
+          
+          // Check if event starts or spans this hour
+          const hourStart = new Date(dayDate);
+          hourStart.setHours(hour, 0, 0, 0);
+          
+          const hourEnd = new Date(dayDate);
+          hourEnd.setHours(hour, 59, 59, 999);
+          
+          return (evStart <= hourEnd && evEnd >= hourStart);
+        });
+        
+        // Add events to this hour cell
+        dayEvents.forEach(ev => {
+          const evStart = new Date(ev.start_time);
+          const evEnd = new Date(ev.end_time);
+          
+          const eventItem = document.createElement('div');
+          eventItem.className = `event-item priority-${ev.priority || 0}`;
+          
+          // Calculate position and height based on start/end times
+          if (evStart.getHours() === hour) {
+            // Event starts in this hour
+            const minutesOffset = evStart.getMinutes();
+            eventItem.style.top = `${minutesOffset}px`;
+            
+            // Calculate duration in minutes (capped to this hour if spanning multiple)
+            const endMinute = evEnd.getHours() > hour ? 59 : evEnd.getMinutes();
+            const duration = endMinute - minutesOffset;
+            
+            // Set minimum height for very short events
+            eventItem.style.height = `${Math.max(duration, 25)}px`;
+          } else if (evStart.getHours() < hour && evEnd.getHours() > hour) {
+            // Event spans this entire hour
+            eventItem.style.top = '0px';
+            eventItem.style.height = '59px';
+          }
+          
+          eventItem.innerHTML = `
+            <div class="event-title">${ev.title}</div>
+            <div class="event-time">${formatTime(ev.start_time)}</div>
+          `;
+          hourCell.appendChild(eventItem);
+        });
+        
+        dayColumn.appendChild(hourCell);
+      });
+      
+      weekGrid.appendChild(dayColumn);
+    }
+    
+    container.appendChild(weekGrid);
+    
+    // Add current time indicator
+    const now = new Date();
+    const currentDay = now.getDay(); // 0 = Sunday, 6 = Saturday
+    const currentHour = now.getHours();
+    const currentMinute = now.getMinutes();
+    
+    // Calculate position for the time line
+    const timePosition = (currentHour * 60 + currentMinute) * (60 / 60); // 60px per hour
+    
+    // Create and position the time line
+    const timeLine = document.createElement('div');
+    timeLine.className = 'week-current-time-line';
+    timeLine.style.top = `${timePosition + 40}px`; // 40px offset for the header
+    
+    // Only show the line for the current day
+    timeLine.style.left = `calc(${(currentDay + 1) * 100 / 8}% - 12.5%)`;
+    timeLine.style.width = `${100 / 8}%`;
+    
+    container.appendChild(timeLine);
   }
 }
 
@@ -331,3 +473,4 @@ document.addEventListener('DOMContentLoaded', function() {
   updateDateDisplay();
   loadEventsForCurrentView();
 });
+

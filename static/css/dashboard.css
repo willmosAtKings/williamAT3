@@ -484,3 +484,84 @@ html, body {
 #calendarContainer h3 {
   display: none;
 }
+
+/* Week view styling */
+.week-grid {
+  display: grid;
+  grid-template-columns: 60px repeat(7, 1fr);
+  width: 100%;
+  border: 1px solid #ddd;
+  height: fit-content;
+}
+
+.week-time-column {
+  background-color: #f9f9f9;
+  border-right: 1px solid #ddd;
+}
+
+.week-day-column {
+  border-right: 1px solid #eee;
+}
+
+.week-day-column:last-child {
+  border-right: none;
+}
+
+.week-header {
+  height: 40px;
+  padding: 5px;
+  text-align: center;
+  background-color: #f5f5f5;
+  border-bottom: 1px solid #ddd;
+  font-weight: bold;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.week-header.today {
+  background-color: #e3f2fd;
+  color: #1976d2;
+}
+
+.week-day-name {
+  font-size: 0.8rem;
+}
+
+.week-day-number {
+  font-size: 1rem;
+}
+
+.week-hour-label {
+  height: 60px;
+  padding: 5px;
+  text-align: right;
+  border-bottom: 1px solid #ddd;
+  font-size: 0.8rem;
+  color: #666;
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-end;
+}
+
+.week-hour-cell {
+  height: 60px;
+  border-bottom: 1px solid #eee;
+  position: relative;
+}
+
+.week-current-time-line {
+  position: absolute;
+  height: 2px;
+  background-color: red;
+  z-index: 10;
+}
+
+/* Make sure events in week view don't overflow their cells */
+.week-hour-cell .event-item {
+  position: absolute;
+  width: calc(100% - 6px);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
