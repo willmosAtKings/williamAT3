@@ -10,6 +10,23 @@
   <a href="/dashboard" class="back-button">← Back to Dashboard</a>
 
   <form id="eventForm">
+    <!-- Recurring event options - initially hidden -->
+    <div id="recurring-options" style="display: none;">
+      <h3>This is a recurring event. What would you like to edit?</h3>
+      <div class="recurring-option">
+        <input type="radio" id="edit-single" name="edit-scope" value="single" checked>
+        <label for="edit-single">Edit only this occurrence</label>
+      </div>
+      <div class="recurring-option">
+        <input type="radio" id="edit-future" name="edit-scope" value="future">
+        <label for="edit-future">Edit this and all future occurrences</label>
+      </div>
+      <div class="recurring-option">
+        <input type="radio" id="edit-all" name="edit-scope" value="all">
+        <label for="edit-all">Edit all occurrences in the series</label>
+      </div>
+      <hr>
+    </div>
 
     <div id="singleDayInputs">
       <label for="start_time">Start Time:</label>
