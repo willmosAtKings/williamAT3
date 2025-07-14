@@ -72,6 +72,8 @@ html, body {
   top: 0;
   z-index: 100;
   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  /* --- FIX: Prevent this element from shrinking --- */
+  flex-shrink: 0;
 }
 
 .nav-left .create-button {
@@ -166,23 +168,22 @@ html, body {
 
 /* ===== CALENDAR GRID ===== */
 .calendar-container {
-  flex: 1;
-  padding: 15px 1rem 1rem;
-  margin-top: 10px;
+  /* --- FIX: This element will now grow to fill the available space --- */
+  flex: 1; 
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  padding: 1rem;
   box-sizing: border-box;
-  height: calc(100vh - 74px);
+  overflow: hidden; /* Hide any overflow from the container itself */
 }
 
 .calendar-grid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  grid-template-rows: auto repeat(6, 1fr);
+  grid-template-rows: auto repeat(5, 1fr); /* Changed to 5 rows for better fit, can be 6 */
   gap: 0.5rem;
+  /* --- FIX: Remove fixed height and let it grow --- */
   flex-grow: 1;
-  height: calc(100vh - 160px);
   box-sizing: border-box;
 }
 
@@ -195,8 +196,6 @@ html, body {
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 100%;
-  box-sizing: border-box;
 }
 
 /* ===== DAY CELL ===== */
@@ -208,12 +207,11 @@ html, body {
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
-  height: 100%;
-  box-sizing: border-box;
-  overflow: hidden;
-  position: relative; /* Important for absolute positioning of the add button */
+  position: relative;
   cursor: pointer;
   transition: background-color 0.2s;
+  /* --- FIX: Allow scrolling within a cell if it's full --- */
+  overflow-y: auto;
 }
 
 .day-cell:hover {
@@ -237,9 +235,9 @@ html, body {
   font-size: 16px;
   padding: 0;
   display: none;
-  z-index: 10; /* Ensure it's above events */
+  z-index: 10;
   cursor: pointer;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.2); /* Add a subtle shadow */
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
 }
 
 .day-cell:hover .add-event-btn {
@@ -249,7 +247,7 @@ html, body {
 /* Make sure events don't overlap with the add button */
 .day-cell .event-item {
   margin-bottom: 2px;
-  max-width: calc(100% - 10px); /* Leave some space for the button */
+  max-width: calc(100% - 10px);
 }
 
 /* ===== EVENT STYLING ===== */
@@ -300,13 +298,7 @@ html, body {
   .sidebar {
     width: 180px;
   }
-
   .main-content {
-    margin-left: 180px;
-  }
-
-  .navbar {
-    width: calc(100% - 180px);
     margin-left: 180px;
   }
 }
@@ -316,28 +308,21 @@ html, body {
     width: 60px;
     padding: 10px;
   }
-
   .sidebar h2 {
     font-size: 1rem;
     writing-mode: vertical-rl;
     text-orientation: mixed;
   }
-
   .sidebar .tab {
     padding: 8px 5px;
     font-size: 0.8rem;
   }
-
   .main-content {
     margin-left: 60px;
   }
-
   .navbar {
     padding: 0.5rem 1rem;
-    margin-left: 60px;
-    width: calc(100% - 60px);
   }
-
   .user-profile .username {
     max-width: 120px;
     font-size: 0.8rem;
@@ -347,7 +332,6 @@ html, body {
 /* ===== CALENDAR VIEW TYPE =====*/
 #calendarContainer {
   padding: 15px 0 0 0;
-  margin-top: 10px;
   height: auto;
   max-height: calc(100vh - 80px);
   overflow-y: auto;
@@ -461,7 +445,7 @@ html, body {
 /* Events container */
 .events-container {
   position: absolute;
-  top: 40px; /* Header height */
+  top: 40px;
   left: 0;
   right: 0;
   bottom: 0;
@@ -490,7 +474,7 @@ html, body {
   right: 0;
   height: 2px;
   background-color: #e53935;
-  z-index: 100; /* Ensure it's on top of everything */
+  z-index: 100;
   pointer-events: none;
 }
 
@@ -613,7 +597,7 @@ html, body {
   border-radius: 4px;
   font-size: 0.8rem;
   font-weight: 500;
-  margin-right: 25px; /* Add space to avoid overlapping with the close button */
+  margin-right: 25px;
 }
 
 .event-badge.low {
