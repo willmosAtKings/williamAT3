@@ -180,7 +180,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- DELETE BUTTON LOGIC ---
     deleteButton.addEventListener('click', async () => {
-        const confirmationText = "Are you sure you want to delete this event? If it is a recurring event, the entire series will be deleted. This action cannot be undone.";
+        const confirmationText = "Are you sure you want to delete this event? This action cannot be undone.";
         if (confirm(confirmationText)) {
             try {
                 const response = await fetch(`/api/event/${eventId}`, {
