@@ -114,59 +114,53 @@ function renderCalendar(events, view) {
   container.innerHTML = '';
 
   if (view === 'day') {
+    const now = new Date();
+    const today = now.toDateString();
     const hours = [...Array(24).keys()];
-    container.innerHTML = '<h3>Today\'s Events</h3>';
+
+    const grid = document.createElement('div');
+    grid.className = 'timeline-grid';
+
+    const hourLabels = document.createElement('div');
+    hourLabels.className = 'hour-labels';
+
+    const timeSlots = document.createElement('div');
+
     hours.forEach(hour => {
+      const label = document.createElement('div');
+      label.textContent = `${hour.toString().padStart(2, '0')}:00`;
+      hourLabels.appendChild(label);
+
       const slot = document.createElement('div');
       slot.className = 'hour-slot';
-      slot.textContent = `${hour}:00`;
 
-      const matching = events.filter(e => new Date(e.start_time).getHours() === hour);
+      // Add events that match this hour
+      const matching = events.filter(ev => {
+        const evDate = new Date(ev.start_time);
+        return evDate.toDateString() === today && evDate.getHours() === hour;
+      });
+
       matching.forEach(ev => {
         const item = document.createElement('div');
-        item.className = 'event';
-        item.textContent = ev.title;
+        item.className = 'event-item';
+        item.innerHTML = `
+          <div class="event-title">${ev.title}</div>
+          <div class="event-time">${formatTime(ev.start_time)}</div>
+        `;
         slot.appendChild(item);
       });
 
-      container.appendChild(slot);
+      timeSlots.appendChild(slot);
     });
 
-  } else if (view === 'week') {
-    const days = [...Array(7).keys()].map(i => {
-      const d = new Date();
-      d.setDate(d.getDate() + i);
-      return d;
-    });
+    grid.appendChild(hourLabels);
+    grid.appendChild(timeSlots);
+    container.appendChild(grid);
 
-    days.forEach(day => {
-      const column = document.createElement('div');
-      column.className = 'day-column';
-
-      const label = document.createElement('h4');
-      label.textContent = day.toDateString();
-      column.appendChild(label);
-
-      const matching = events.filter(e => {
-        const d = new Date(e.start_time);
-        return d.toDateString() === day.toDateString();
-      });
-
-      matching.forEach(ev => {
-        const item = document.createElement('div');
-        item.className = 'event';
-        item.textContent = ev.title;
-        column.appendChild(item);
-      });
-
-      container.appendChild(column);
-    });
-
-  } else {
-    // TODO: Add or keep your existing monthly layout
-    container.innerHTML = '<p>Monthly view not implemented here yet.</p>';
+    addCurrentTimeLine(container);
   }
 }
+
 
 
 // Helper function to format time
