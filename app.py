@@ -7,6 +7,7 @@ from datetime import datetime, timedelta
 from dateutil.relativedelta import relativedelta
 from sqlalchemy import or_, and_
 from flask_migrate import Migrate
+import uuid
 
 def create_app():
     app = Flask(__name__)
@@ -20,24 +21,21 @@ def create_app():
         from models.event import Event
         from models.user import User
 
+    # ... (other routes are correct and remain the same) ...
+    @app.route('/')
+    def index():
+        return render_template('login.html')
+
     @app.route("/dashboard", methods=["GET", "POST"])
     def dashboard():
         if 'user_id' not in session:
             return redirect(url_for('login'))
-            
         from models.user import User
         user = db.session.get(User, session['user_id'])
         if not user:
             session.clear()
             return redirect(url_for('login'))
-
-        # Pass user info to the template for the frontend JS to use
-        return render_template(
-            "dashboard.html", 
-            user_email=user.email, 
-            user_id=user.id, 
-            user_role=user.role
-        )
+        return render_template("dashboard.html", user_email=user.email, user_id=user.id, user_role=user.role)
  
     @app.route('/login', methods=['POST', 'GET'])
     def login():
@@ -109,7 +107,7 @@ def create_app():
     def create_event():
         user_role = session.get('user_role')
         if user_role not in ['student', 'teacher', 'admin']:
-            return jsonify({'error': 'Unauthorised'}), 403
+            return jsonify({'error': 'Unauthorized'}), 403
 
         if request.method == 'GET':
             return render_template('create_event.html', user_role=user_role)
@@ -146,6 +144,7 @@ def create_app():
             if end_date > limit_date:
                 return jsonify({'error': 'Recurring events cannot extend more than 2 years.'}), 400
 
+            recurrence_group_id = str(uuid.uuid4())
             weekday_map = ['MO', 'TU', 'WE', 'TH', 'FR', 'SA', 'SU']
             current = start_date
             while current <= end_date:
@@ -163,6 +162,8 @@ def create_app():
                     tags=tags,
                     start_time=start_dt,
                     end_time=end_dt,
+                    is_recurring=True,
+                    recurrence_group_id=recurrence_group_id,
                     creator_id=session['user_id']
                 )
                 db.session.add(event)
@@ -196,6 +197,7 @@ def create_app():
                 tags=tags,
                 start_time=start_dt,
                 end_time=end_dt,
+                is_recurring=False,
                 creator_id=session['user_id']
             )
             db.session.add(event)
@@ -206,18 +208,13 @@ def create_app():
     def edit_event_page(event_id):
         from models.event import Event
         from models.user import User
-        
         if 'user_id' not in session:
             return redirect(url_for('login'))
-            
         user = db.session.get(User, session['user_id'])
         event = db.session.get(Event, event_id)
-        
         if not event:
             flash('Event not found.', 'error')
             return redirect(url_for('dashboard'))
-
-        # Permission check logic
         can_edit = False
         if user.role == 'admin':
             can_edit = True
@@ -225,14 +222,13 @@ def create_app():
             can_edit = True
         elif user.role == 'student' and event.creator_id == user.id:
             can_edit = True
-        
         if not can_edit:
             flash('You do not have permission to edit this event.', 'error')
             return redirect(url_for('dashboard'))
-            
         return render_template('edit_event.html', event_id=event_id, user_role=user.role)
 
-    @app.route('/api/event/<int:event_id>', methods=['GET', 'POST'])
+    # --- THIS IS THE UPDATED ROUTE ---
+    @app.route('/api/event/<int:event_id>', methods=['GET', 'POST', 'DELETE'])
     def handle_event(event_id):
         from models.event import Event
         from models.user import User
@@ -247,18 +243,17 @@ def create_app():
             return jsonify({'error': 'Event not found'}), 404
             
         # Permission check logic
-        can_edit = False
+        can_modify = False
         if user.role == 'admin':
-            can_edit = True
+            can_modify = True
         elif user.role == 'teacher' and event.creator.role != 'student':
-            can_edit = True
+            can_modify = True
         elif user.role == 'student' and event.creator_id == user.id:
-            can_edit = True
+            can_modify = True
 
-        if not can_edit:
+        if not can_modify:
             return jsonify({'error': 'Forbidden'}), 403
 
-        # --- GET request: Fetch event data to populate the form ---
         if request.method == 'GET':
             return jsonify({
                 'id': event.id,
@@ -268,105 +263,48 @@ def create_app():
                 'tags': event.tags,
                 'start_time': event.start_time.isoformat(),
                 'end_time': event.end_time.isoformat(),
-                'is_recurring': event.is_recurring if hasattr(event, 'is_recurring') else False,
-                'recurrence': event.recurrence if hasattr(event, 'recurrence') else None
+                'is_recurring': event.is_recurring,
+                'recurrence_group_id': event.recurrence_group_id
             })
 
-        # --- POST request: Update the event with new data ---
         if request.method == 'POST':
             data = request.get_json()
             if not data:
                 return jsonify({'error': 'Invalid JSON'}), 400
 
-            # Handle recurring events
-            if hasattr(event, 'is_recurring') and event.is_recurring:
-                edit_scope = data.get('edit_scope', 'all')
-                
-                if edit_scope == 'single':
-                    # Create an exception for this occurrence
-                    from models.event_exceptions import EventException
-                    
-                    try:
-                        exception_date = datetime.strptime(data.get('exception_date'), '%Y-%m-%d').date()
-                        
-                        # Check if an exception already exists for this date
-                        existing_exception = EventException.query.filter_by(
-                            original_event_id=event.id,
-                            exception_date=exception_date
-                        ).first()
-                        
-                        if existing_exception:
-                            # Update existing exception
-                            existing_exception.title = data.get('title')
-                            existing_exception.description = data.get('description')
-                            existing_exception.priority = int(data.get('priority', 0))
-                            if user.role in ['teacher', 'admin']:
-                                existing_exception.tags = data.get('tags', '')
-                            existing_exception.start_time = datetime.fromisoformat(data['start_time'])
-                            existing_exception.end_time = datetime.fromisoformat(data['end_time'])
-                        else:
-                            # Create new exception
-                            exception = EventException(
-                                original_event_id=event.id,
-                                exception_date=exception_date,
-                                title=data.get('title'),
-                                description=data.get('description'),
-                                priority=int(data.get('priority', 0)),
-                                tags=data.get('tags', '') if user.role in ['teacher', 'admin'] else '',
-                                start_time=datetime.fromisoformat(data['start_time']),
-                                end_time=datetime.fromisoformat(data['end_time'])
-                            )
-                            db.session.add(exception)
-                            
-                    except (ValueError, KeyError) as e:
-                        return jsonify({'error': f'Invalid data for exception: {str(e)}'}), 400
-                        
-                elif edit_scope == 'future':
-                    # This is a complex operation that would require:
-                    # 1. End the current recurring event at the exception date
-                    # 2. Create a new recurring event with the updated properties starting from the exception date
-                    # For simplicity, we'll just update all occurrences for now
-                    event.title = data.get('title', event.title)
-                    event.description = data.get('description', event.description)
-                    event.priority = int(data.get('priority', event.priority))
-                    if user.role in ['teacher', 'admin']:
-                        event.tags = data.get('tags', event.tags)
-                    
-                    # Note: Updating times for recurring events is complex and may require
-                    # recalculating all future occurrences. For simplicity, we're not doing that here.
-                    
-                elif edit_scope == 'all':
-                    # Update the master recurring event
-                    event.title = data.get('title', event.title)
-                    event.description = data.get('description', event.description)
-                    event.priority = int(data.get('priority', event.priority))
-                    if user.role in ['teacher', 'admin']:
-                        event.tags = data.get('tags', event.tags)
-                    
-                    # Note: Updating times for recurring events is complex and may require
-                    # recalculating all occurrences. For simplicity, we're not doing that here.
+            event.title = data.get('title', event.title)
+            event.description = data.get('description', event.description)
+            event.priority = data.get('priority', event.priority)
+            
+            if user.role in ['teacher', 'admin']:
+                event.tags = data.get('tags', event.tags)
             else:
-                # Regular update for non-recurring events
-                event.title = data.get('title', event.title)
-                event.description = data.get('description', event.description)
-                event.priority = int(data.get('priority', event.priority))
-                
-                if user.role in ['teacher', 'admin']:
-                    event.tags = data.get('tags', event.tags)
-                
-                try:
-                    event.start_time = datetime.fromisoformat(data['start_time'])
-                    event.end_time = datetime.fromisoformat(data['end_time'])
-                except (KeyError, ValueError):
-                    return jsonify({'error': 'Invalid or missing date format'}), 400
+                event.tags = ''
 
-                if event.end_time <= event.start_time:
-                    return jsonify({'error': 'End time must be after the start time.'}), 400
+            try:
+                event.start_time = datetime.fromisoformat(data['start_time'])
+                event.end_time = datetime.fromisoformat(data['end_time'])
+            except (KeyError, ValueError):
+                return jsonify({'error': 'Invalid or missing date format'}), 400
+
+            if event.end_time <= event.start_time:
+                return jsonify({'error': 'End time must be after the start time.'}), 400
 
             db.session.commit()
             return jsonify({'message': 'Event updated successfully!'})
 
+        if request.method == 'DELETE':
+            # If it's a recurring event, delete the entire series
+            if event.is_recurring and event.recurrence_group_id:
+                Event.query.filter_by(recurrence_group_id=event.recurrence_group_id).delete()
+            else:
+                # Otherwise, just delete the single event
+                db.session.delete(event)
+            
+            db.session.commit()
+            return jsonify({'message': 'Event deleted successfully.'})
 
+    # ... (profile routes are correct and remain the same) ...
     @app.route('/profile/info')
     def profile():
         user_id = session.get('user_id')
@@ -397,7 +335,7 @@ def create_app():
     def update_profile_tags():
         from models.user import User
         if 'user_id' not in session:
-            return jsonify({'error': 'Unauthorised'}), 401
+            return jsonify({'error': 'Unauthorized'}), 401
         user = db.session.get(User, session['user_id'])
         if not user:
             return jsonify({'error': 'User not found'}), 401
@@ -413,14 +351,11 @@ def create_app():
     def get_events():
         from models.event import Event
         from models.user import User
-
         if 'user_id' not in session:
-            return jsonify({'error': 'Unauthorised'}), 401
-
+            return jsonify({'error': 'Unauthorized'}), 401
         user = db.session.get(User, session['user_id'])
         if not user:
             return jsonify({'error': 'User not found'}), 401
-
         if user.role == 'admin':
             query = Event.query
         else:
@@ -434,10 +369,8 @@ def create_app():
                 for tag in user_tags:
                     filter_conditions.append(Event.tags.like(f'%{tag}%'))
             query = Event.query.filter(or_(*filter_conditions))
-
         range_type = request.args.get('range', 'month')
         start_str = request.args.get('start') or request.args.get('date')
-
         if start_str:
             try:
                 start = datetime.fromisoformat(start_str)
@@ -447,16 +380,13 @@ def create_app():
                     end = start + timedelta(days=7)
                 else:
                     end = start + relativedelta(months=1)
-                
                 query = query.filter(
                     Event.start_time < end, 
                     Event.end_time > start
                 )
             except Exception:
                 return jsonify({'error': 'Invalid date format'}), 400
-
         events = query.all()
-
         return jsonify([
             {
                 'id': e.id,
@@ -467,7 +397,9 @@ def create_app():
                 'start_time': e.start_time.isoformat(),
                 'end_time': e.end_time.isoformat(),
                 'creator_id': e.creator_id,
-                'creator_role': e.creator.role # Add the creator's role to the payload
+                'creator_role': e.creator.role,
+                'is_recurring': e.is_recurring,
+                'recurrence_group_id': e.recurrence_group_id
             } for e in events
         ])
 

@@ -15,6 +15,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const form = document.getElementById('eventForm');
     const userRole = document.body.dataset.userRole;
     const tagSection = document.getElementById('tag-section');
+    const deleteButton = document.getElementById('deleteEventBtn'); // Get the delete button
     const megaMenuDropdown = document.getElementById('mega-menu-dropdown');
     const tagSelectorButton = document.getElementById('tag-selector-button');
     const selectedTagsInput = document.getElementById('selected-tags-input');
@@ -28,7 +29,6 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // --- UI LOGIC ---
-    // Hide tag section for students
     if (userRole === 'student') {
         if (tagSection) tagSection.style.display = 'none';
     }
@@ -119,36 +119,19 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!response.ok) {
                 throw new Error('Could not fetch event data.');
             }
-            const eventData = await response.json(); // Changed from 'event' to 'eventData'
+            const eventData = await response.json();
     
-            // Populate simple fields
             document.getElementById('title').value = eventData.title;
             document.getElementById('description').value = eventData.description;
             document.getElementById('priority').value = eventData.priority;
     
-            // Populate datetime-local inputs (requires formatting)
             document.getElementById('start_time').value = eventData.start_time.slice(0, 16);
             document.getElementById('end_time').value = eventData.end_time.slice(0, 16);
     
-            // Handle recurring events
-            if (eventData.is_recurring) {
-                document.getElementById('recurring-options').style.display = 'block';
-                
-                // Add the exception date to the form data
-                const exceptionDate = new Date(eventData.start_time).toISOString().split('T')[0];
-                const hiddenInput = document.createElement('input');
-                hiddenInput.type = 'hidden';
-                hiddenInput.id = 'exception_date';
-                hiddenInput.value = exceptionDate;
-                form.appendChild(hiddenInput);
-            }
-    
-            // Populate tags
             if (eventData.tags && userRole !== 'student') {
                 const tags = eventData.tags.split(',').map(t => t.trim()).filter(Boolean);
                 selectedTags = new Set(tags);
                 updateSelectedTagsDisplay();
-                // Highlight selected tags in the dropdown
                 tags.forEach(tag => {
                     const tagEl = megaMenuDropdown.querySelector(`.mega-menu-tag[data-tag="${tag}"]`);
                     if (tagEl) tagEl.classList.add('selected');
@@ -162,8 +145,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
     
-
-    // --- FORM SUBMISSION ---
+    // --- FORM SUBMISSION (UPDATE) ---
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
 
@@ -175,11 +157,6 @@ document.addEventListener('DOMContentLoaded', () => {
             end_time: document.getElementById('end_time').value,
             tags: selectedTagsInput ? selectedTagsInput.value : ''
         };
-
-        if (document.getElementById('recurring-options').style.display !== 'none') {
-            payload.edit_scope = document.querySelector('input[name="edit-scope"]:checked').value;
-            payload.exception_date = document.getElementById('exception_date').value;
-        }
 
         try {
             const response = await fetch(`/api/event/${eventId}`, {
@@ -198,6 +175,28 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (error) {
             console.error("Error:", error);
             alert(error.message);
+        }
+    });
+
+    // --- DELETE BUTTON LOGIC ---
+    deleteButton.addEventListener('click', async () => {
+        const confirmationText = "Are you sure you want to delete this event? If it is a recurring event, the entire series will be deleted. This action cannot be undone.";
+        if (confirm(confirmationText)) {
+            try {
+                const response = await fetch(`/api/event/${eventId}`, {
+                    method: 'DELETE'
+                });
+                const result = await response.json();
+                if (response.ok) {
+                    alert(result.message);
+                    window.location.href = '/dashboard';
+                } else {
+                    throw new Error(result.error || 'Failed to delete event.');
+                }
+            } catch (error) {
+                console.error("Error deleting event:", error);
+                alert(error.message);
+            }
         }
     });
 

@@ -8,18 +8,14 @@ class Event(db.Model):
     title = db.Column(db.String(150), nullable=False)
     description = db.Column(db.String(300))
 
-    priority = db.Column(db.Integer, default=0)  # 0 = low, 1 = medium, 2 = high
-    tags = db.Column(db.String(100))             # comma-separated
+    priority = db.Column(db.Integer, default=0)
+    tags = db.Column(db.String(100))
 
-    # The 'is_public' column has been removed.
-
-    # Supports both single-day and multi-day events
     start_time = db.Column(db.DateTime)
     end_time = db.Column(db.DateTime)
 
-    # Recurring event support
-    is_recurring = db.Column(db.Boolean, default=False)
-    recurrence = db.Column(JSON, nullable=True)
+    is_recurring = db.Column(db.Boolean, default=False, nullable=False)
+    recurrence_group_id = db.Column(db.String(36), nullable=True, index=True)
 
-    # Link to the creator (teacher/admin)
     creator_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+

@@ -393,11 +393,9 @@ function formatRecurrence(recurrence) {
 }
 
 function showEventDetails(event) {
-  // Get current user info from the data attributes on the body tag
   const currentUserId = parseInt(document.body.dataset.userId, 10);
   const currentUserRole = document.body.dataset.userRole;
 
-  // Populate modal with event details (title, priority, etc.)
   document.getElementById('eventTitle').textContent = event.title;
   const priorityBadge = document.getElementById('eventPriority');
   priorityBadge.textContent = ['Low', 'Medium', 'High'][event.priority] || 'Low';
@@ -407,9 +405,9 @@ function showEventDetails(event) {
   document.getElementById('eventTime').textContent = `${formatTime(event.start_time)} - ${formatTime(event.end_time)}`;
   
   const recurrenceInfo = document.getElementById('eventRecurrenceInfo');
-  if (event.is_recurring && event.recurrence) {
+  if (event.is_recurring) { // Check the new is_recurring flag
     recurrenceInfo.style.display = 'flex';
-    document.getElementById('eventRecurrence').textContent = formatRecurrence(event.recurrence);
+    document.getElementById('eventRecurrence').textContent = `This is a recurring event.`;
   } else {
     recurrenceInfo.style.display = 'none';
   }
@@ -428,16 +426,15 @@ function showEventDetails(event) {
     });
   }
   
-  // --- PERMISSION LOGIC FOR EDIT BUTTON ---
   const editButton = document.getElementById('editEventBtn');
   let canEdit = false;
 
   if (currentUserRole === 'admin') {
-    canEdit = true; // Admins can edit anything
+    canEdit = true;
   } else if (currentUserRole === 'teacher' && event.creator_role !== 'student') {
-    canEdit = true; // Teachers can edit anything except student events
+    canEdit = true;
   } else if (currentUserRole === 'student' && event.creator_id === currentUserId) {
-    canEdit = true; // Students can only edit their own events
+    canEdit = true;
   }
 
   if (canEdit) {
@@ -448,28 +445,5 @@ function showEventDetails(event) {
   } else {
     editButton.style.display = 'none';
   }
-
-  const deleteButton = document.getElementById('deleteEventBtn');
-  if (canEdit) {
-      deleteButton.style.display = 'inline-block';
-      deleteButton.onclick = () => {
-        if (confirm('Are you sure you want to delete this event?')) {
-          fetch(`/api/events/${event.id}`, { method: 'DELETE' })
-            .then(response => {
-              if (response.ok) {
-                eventModal.style.display = 'none';
-                loadEventsForCurrentView();
-              } else {
-                alert('Failed to delete event');
-              }
-            })
-            .catch(error => console.error('Error deleting event:', error));
-        }
-      };
-  } else {
-      deleteButton.style.display = 'none';
-  }
-
-  // Show the modal
   eventModal.style.display = 'block';
 }
