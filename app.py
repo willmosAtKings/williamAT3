@@ -20,6 +20,7 @@ def create_app():
         from models.event import Event
         from models.user import User
 
+    # ... (routes for /, /dashboard, /login, /logout, /register remain the same) ...
     @app.route('/')
     def index():
         return render_template('login.html')
@@ -106,15 +107,26 @@ def create_app():
 
     @app.route('/event/create', methods=['GET', 'POST'])
     def create_event():
-        if session.get('user_role') != 'teacher':
-            return jsonify({'error': 'Unauthorised'}), 403
+        user_role = session.get('user_role')
+        if user_role not in ['student', 'teacher', 'admin']:
+            return jsonify({'error': 'Unauthorized'}), 403
+
         if request.method == 'GET':
-            return render_template('create_event.html')
+            # Pass the user's role to the template so the UI can be adjusted.
+            return render_template('create_event.html', user_role=user_role)
+
         if not request.is_json:
             return jsonify({'error': 'Content-Type must be application/json'}), 415
+        
         data = request.get_json()
+        
+        tags = data.get('tags', '')
+        if user_role == 'student':
+            tags = '' # Force no tags for student-created events, making them private.
+
         event_type = data.get('event_type')
         if event_type == 'recurring':
+            # ... (recurring logic is fine, just uses the new 'tags' variable) ...
             required = ['title', 'start_time', 'end_time', 'rec_start_date', 'rec_ends', 'rec_interval', 'rec_unit']
             if not all(data.get(f) for f in required):
                 return jsonify({'error': 'Missing recurring event fields'}), 400
@@ -142,7 +154,7 @@ def create_app():
                     title=data['title'],
                     description=data.get('description', ''),
                     priority=int(data.get('priority', 0)),
-                    tags=data.get('tags', ''),
+                    tags=tags, # Use the potentially modified tags
                     start_time=start_dt,
                     end_time=end_dt,
                     creator_id=session['user_id']
@@ -171,7 +183,7 @@ def create_app():
                 title=data['title'],
                 description=data.get('description', ''),
                 priority=int(data.get('priority', 0)),
-                tags=data.get('tags', ''),
+                tags=tags, # Use the potentially modified tags
                 start_time=start_dt,
                 end_time=end_dt,
                 creator_id=session['user_id']
@@ -180,6 +192,7 @@ def create_app():
             db.session.commit()
             return jsonify({'message': 'Event created successfully', 'event_id': event.id}), 200
 
+    # ... (profile routes remain the same) ...
     @app.route('/profile/info')
     def profile():
         user_id = session.get('user_id')
@@ -205,28 +218,22 @@ def create_app():
             return redirect(url_for('login'))
         
         user = db.session.get(User, user_id)
-        # Pass the user's saved tags to the template
         return render_template('profile/preferences.html', current_tags=user.profile_tags or '')
 
     @app.route('/api/profile/tags', methods=['POST'])
     def update_profile_tags():
         from models.user import User
-        
         if 'user_id' not in session:
             return jsonify({'error': 'Unauthorized'}), 401
-
         user = db.session.get(User, session['user_id'])
         if not user:
             return jsonify({'error': 'User not found'}), 401
-
         data = request.get_json()
         if data is None:
             return jsonify({'error': 'Invalid JSON'}), 400
-            
         new_tags = data.get('tags', '')
         user.profile_tags = new_tags
         db.session.commit()
-
         return jsonify({'message': 'Your tags have been updated successfully!'}), 200
 
     @app.route('/api/events')
@@ -245,14 +252,16 @@ def create_app():
             query = Event.query
         else:
             user_tags = user.tags
-            filter_conditions = []
+            
+            filter_conditions = [
+                Event.creator_id == user.id
+            ]
+            
             if user_tags:
                 for tag in user_tags:
                     filter_conditions.append(Event.tags.like(f'%{tag}%'))
-            if filter_conditions:
-                query = Event.query.filter(or_(*filter_conditions))
-            else:
-                query = Event.query.filter(False)
+            
+            query = Event.query.filter(or_(*filter_conditions))
 
         range_type = request.args.get('range', 'month')
         start_str = request.args.get('start') or request.args.get('date')
