@@ -84,12 +84,14 @@ def create_app():
             data = request.get_json()
             email = data.get('email')
             password = data.get('password')
-            username = data.get('username', email)
+            # Remove username reference
+            # username = data.get('username', email)  # Remove this line
             role = data.get('role')
         else:
             email = request.form.get('email')
             password = request.form.get('password')
-            username = request.form.get('username', email)
+            # Remove username reference
+            # username = request.form.get('username', email)  # Remove this line
             role = request.form.get('role')
         if not email or not password or not role:
             return jsonify({'error': 'Missing fields'}), 400
@@ -97,12 +99,16 @@ def create_app():
             return jsonify({'error': 'Invalid role'}), 400
         if User.query.filter_by(email=email).first():
             return jsonify({'error': 'Email already exists'}), 409
-        new_user = User(username=username, email=email, password=password, role=role)
+        
+        # Update the User creation - remove username parameter
+        new_user = User(email=email, password=password, role=role)
+        
         db.session.add(new_user)
         db.session.commit()
         response = jsonify({'message': 'User created successfully', 'role': new_user.role})
         response.set_cookie('session_token', new_user.session_token, httponly=True, secure=False, samesite='Strict', max_age=7200)
         return response
+
 
     @app.route('/event/create', methods=['GET', 'POST'])
     def create_event():
@@ -302,17 +308,33 @@ def create_app():
                         original_date = datetime.strptime(data['original_date'], '%Y-%m-%d').date()
                         events_to_update_query = events_to_update_query.filter(Event.start_time >= datetime.combine(original_date, datetime.min.time()))
                     
-                    for e in events_to_update_query.all():
-                        e.title = data.get('title')
-                        e.description = data.get('description')
-                        e.priority = int(data.get('priority', 0))
-                        if user.role in ['teacher', 'admin']:
-                            e.tags = data.get('tags', '')
-                    
-                    db.session.commit()
-                    return jsonify({'message': 'The event series was updated successfully!'})
-            
+                    # Calculate time difference for shifting events
+                    try:
+                        new_start = datetime.fromisoformat(data['start_time'])
+                        new_end = datetime.fromisoformat(data['end_time'])
+                        
+                        # Calculate the time difference between old and new times
+                        # This will be used to shift all events by the same amount
+                        start_delta = new_start - event.start_time
+                        end_delta = new_end - event.end_time
+                        
+                        for e in events_to_update_query.all():
+                            e.title = data.get('title')
+                            e.description = data.get('description')
+                            e.priority = int(data.get('priority', 0))
+                            if user.role in ['teacher', 'admin']:
+                                e.tags = data.get('tags', '')
+                            
+                            # Apply the time shifts to each event
+                            e.start_time = e.start_time + start_delta
+                            e.end_time = e.end_time + end_delta
+                        
+                        db.session.commit()
+                        return jsonify({'message': 'The event series was updated successfully!'})
+                    except (KeyError, ValueError):
+                        return jsonify({'error': 'Invalid or missing date format'}), 400
             else:
+                # This is the missing part - handle non-recurring events
                 event.title = data.get('title', event.title)
                 event.description = data.get('description', event.description)
                 event.priority = int(data.get('priority', event.priority))
@@ -359,6 +381,7 @@ def create_app():
                 db.session.delete(event)
                 db.session.commit()
                 return jsonify({'message': 'Event deleted successfully.'})
+
 
     @app.route('/api/events')
     def get_events():
