@@ -433,14 +433,30 @@ def create_app():
         from models.event import Event
         from models.user import User
         from models.event_exceptions import EventExceptions
+        
         if 'user_id' not in session:
             return jsonify({'error': 'Unauthorized'}), 401
+        
         user = db.session.get(User, session['user_id'])
         if not user:
             return jsonify({'error': 'User not found'}), 401
+        
+        # Different query logic based on user role
         if user.role == 'admin':
+            # Admins see all events
             query = Event.query
+        elif user.role == 'teacher':
+            # Teachers see all events EXCEPT those created by students
+            # First, get all student user IDs
+            student_ids = [u.id for u in User.query.filter_by(role='student').all()]
+            
+            # Then filter events to exclude those created by students
+            if student_ids:  # Only apply filter if there are students
+                query = Event.query.filter(~Event.creator_id.in_(student_ids))
+            else:
+                query = Event.query
         else:
+            # Students and other roles see events based on tags
             user_tags = user.tags
             private_event_condition = and_(
                 Event.creator_id == user.id,
@@ -451,6 +467,8 @@ def create_app():
                 for tag in user_tags:
                     filter_conditions.append(Event.tags.like(f'%{tag}%'))
             query = Event.query.filter(or_(*filter_conditions))
+        
+        # Rest of the function remains the same
         range_type = request.args.get('range', 'month')
         start_str = request.args.get('start') or request.args.get('date')
         if start_str:
@@ -471,6 +489,7 @@ def create_app():
         
         events = query.all()
         
+        # Process events and exceptions as before
         final_events = []
         processed_exceptions = set()
 
@@ -533,6 +552,7 @@ def create_app():
                 })
         
         return jsonify(final_events)
+
 
     return app
 
