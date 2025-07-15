@@ -120,16 +120,48 @@ document.addEventListener('DOMContentLoaded', () => {
                 throw new Error('Could not fetch event data.');
             }
             const eventData = await response.json();
+            console.log("Event data received:", eventData);
 
-            // Populate basic fields as before
+            // Populate basic fields
             document.getElementById('title').value = eventData.title;
             document.getElementById('description').value = eventData.description;
             document.getElementById('priority').value = eventData.priority;
-            document.getElementById('start_time').value = eventData.start_time.slice(0, 16);
-            document.getElementById('end_time').value = eventData.end_time.slice(0, 16);
-
-            // Show recurring options if this is a recurring event
+            
+            // Split datetime into date and time components
+            const startDateTime = new Date(eventData.start_time);
+            const endDateTime = new Date(eventData.end_time);
+            
+            // Format date as YYYY-MM-DD
+            const startDate = startDateTime.toISOString().split('T')[0];
+            const endDate = endDateTime.toISOString().split('T')[0];
+            
+            // Format time as HH:MM
+            const startTime = startDateTime.toTimeString().slice(0, 5);
+            const endTime = endDateTime.toTimeString().slice(0, 5);
+            
+            // Show different inputs based on whether it's a recurring event
             if (eventData.is_recurring) {
+                // For recurring events, only show time inputs
+                document.getElementById('singleDayInputs').style.display = 'none';
+                document.getElementById('recurringTimeInputs').style.display = 'block';
+                
+                document.getElementById('rec_start_time').value = startTime;
+                document.getElementById('rec_end_time').value = endTime;
+                
+                // Store dates as hidden fields for submission
+                const hiddenStartDate = document.createElement('input');
+                hiddenStartDate.type = 'hidden';
+                hiddenStartDate.id = 'hidden_start_date';
+                hiddenStartDate.value = startDate;
+                form.appendChild(hiddenStartDate);
+                
+                const hiddenEndDate = document.createElement('input');
+                hiddenEndDate.type = 'hidden';
+                hiddenEndDate.id = 'hidden_end_date';
+                hiddenEndDate.value = endDate;
+                form.appendChild(hiddenEndDate);
+                
+                // Show recurring options
                 const recurringOptions = document.getElementById('recurringEventOptions');
                 if (recurringOptions) {
                     recurringOptions.style.display = 'block';
@@ -144,12 +176,21 @@ document.addEventListener('DOMContentLoaded', () => {
                     const hiddenOrigDate = document.createElement('input');
                     hiddenOrigDate.type = 'hidden';
                     hiddenOrigDate.id = 'original_date';
-                    hiddenOrigDate.value = eventData.start_time.split('T')[0];
+                    hiddenOrigDate.value = startDate;
                     form.appendChild(hiddenOrigDate);
                 }
+            } else {
+                // For non-recurring events, show date and time inputs
+                document.getElementById('singleDayInputs').style.display = 'block';
+                document.getElementById('recurringTimeInputs').style.display = 'none';
+                
+                document.getElementById('start_date').value = startDate;
+                document.getElementById('start_time').value = startTime;
+                document.getElementById('end_date').value = endDate;
+                document.getElementById('end_time').value = endTime;
             }
 
-            // Tags handling as before
+            // Tags handling
             if (eventData.tags && userRole !== 'student') {
                 const tags = eventData.tags.split(',').map(t => t.trim()).filter(Boolean);
                 selectedTags = new Set(tags);
@@ -171,12 +212,35 @@ document.addEventListener('DOMContentLoaded', () => {
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
 
+        let startDateTime, endDateTime;
+        
+        // Get the appropriate date and time values based on event type
+        if (document.getElementById('recurringTimeInputs').style.display !== 'none') {
+            // Recurring event - combine hidden dates with visible times
+            const startDate = document.getElementById('hidden_start_date').value;
+            const startTime = document.getElementById('rec_start_time').value;
+            const endDate = document.getElementById('hidden_end_date').value;
+            const endTime = document.getElementById('rec_end_time').value;
+            
+            startDateTime = `${startDate}T${startTime}:00`;
+            endDateTime = `${endDate}T${endTime}:00`;
+        } else {
+            // Non-recurring event - combine visible dates and times
+            const startDate = document.getElementById('start_date').value;
+            const startTime = document.getElementById('start_time').value;
+            const endDate = document.getElementById('end_date').value;
+            const endTime = document.getElementById('end_time').value;
+            
+            startDateTime = `${startDate}T${startTime}:00`;
+            endDateTime = `${endDate}T${endTime}:00`;
+        }
+
         const payload = {
             title: document.getElementById('title').value,
             description: document.getElementById('description').value,
             priority: parseInt(document.getElementById('priority').value),
-            start_time: document.getElementById('start_time').value,
-            end_time: document.getElementById('end_time').value,
+            start_time: startDateTime,
+            end_time: endDateTime,
             tags: selectedTagsInput ? selectedTagsInput.value : ''
         };
 
@@ -188,6 +252,8 @@ document.addEventListener('DOMContentLoaded', () => {
             payload.recurrence_group_id = document.getElementById('recurrence_group_id').value;
             payload.original_date = document.getElementById('original_date').value;
         }
+
+        console.log("Submitting payload:", payload);
 
         try {
             const response = await fetch(`/api/event/${eventId}`, {
@@ -216,26 +282,37 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // If it's a recurring event, ask which instances to delete
         let deleteScope = 'single';
+        let originalDate = '';
+        
         if (recurringOptions && recurringOptions.style.display !== 'none') {
             const result = confirm("This is a recurring event. Do you want to delete all occurrences in the series?");
             if (result) {
                 deleteScope = 'all';
                 confirmationText = "Are you sure you want to delete ALL occurrences of this recurring event? This action cannot be undone.";
             } else {
+                deleteScope = 'this';
                 confirmationText = "Are you sure you want to delete only this occurrence of the recurring event? This action cannot be undone.";
+                // Get the original date from the hidden input
+                originalDate = document.getElementById('original_date')?.value || '';
             }
         }
         
         if (confirm(confirmationText)) {
             try {
-                const url = deleteScope === 'all' ? 
-                    `/api/event/${eventId}?scope=all` : 
-                    `/api/event/${eventId}?scope=single`;
-                    
+                let url = `/api/event/${eventId}?scope=${deleteScope}`;
+                if (deleteScope === 'this' && originalDate) {
+                    url += `&original_date=${originalDate}`;
+                }
+                
+                console.log(`Sending DELETE request to: ${url}`);
+                
                 const response = await fetch(url, {
                     method: 'DELETE'
                 });
+                
                 const result = await response.json();
+                console.log("Delete response:", result);
+                
                 if (response.ok) {
                     alert(result.message);
                     window.location.href = '/dashboard';

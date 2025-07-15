@@ -114,7 +114,7 @@ def create_app():
     def create_event():
         user_role = session.get('user_role')
         if user_role not in ['student', 'teacher', 'admin']:
-            return jsonify({'error': 'Unauthorised'}), 403
+            return jsonify({'error': 'Unauthorized'}), 403
 
         if request.method == 'GET':
             return render_template('create_event.html', user_role=user_role)
@@ -241,7 +241,7 @@ def create_app():
         from models.event_exceptions import EventExceptions
         
         if 'user_id' not in session:
-            return jsonify({'error': 'Unauthorised'}), 401
+            return jsonify({'error': 'Unauthorized'}), 401
             
         user = db.session.get(User, session['user_id'])
         event = db.session.get(Event, event_id)
@@ -281,42 +281,60 @@ def create_app():
             if event.is_recurring and 'edit_scope' in data:
                 edit_scope = data.get('edit_scope')
                 
-                if edit_scope == 'this':
-                    original_date = datetime.strptime(data['original_date'], '%Y-%m-%d').date()
-                    existing_exception = EventExceptions.query.filter_by(original_event_id=event.id, exception_date=original_date).first()
+                try:
+                    new_start = datetime.fromisoformat(data['start_time'])
+                    new_end = datetime.fromisoformat(data['end_time'])
                     
-                    if existing_exception:
-                        exception = existing_exception
-                    else:
-                        exception = EventExceptions(original_event_id=event.id, exception_date=original_date)
-                        db.session.add(exception)
+                    # For 'all' or 'future' scopes, only allow time changes, not date changes
+                    if edit_scope in ['all', 'future']:
+                        if new_start.date() != event.start_time.date() or new_end.date() != event.end_time.date():
+                            return jsonify({'error': 'For recurring events, you can only change the time, not the date.'}), 400
                     
-                    exception.title = data.get('title')
-                    exception.description = data.get('description')
-                    exception.priority = int(data.get('priority', 0))
-                    if user.role in ['teacher', 'admin']:
-                        exception.tags = data.get('tags', '')
-                    exception.start_time = datetime.fromisoformat(data['start_time'])
-                    exception.end_time = datetime.fromisoformat(data['end_time'])
-                    
-                    db.session.commit()
-                    return jsonify({'message': 'This occurrence was updated successfully!'})
-                
-                else: # 'all' or 'future'
-                    events_to_update_query = Event.query.filter_by(recurrence_group_id=event.recurrence_group_id)
-                    if edit_scope == 'future':
+                    if edit_scope == 'this':
+                        # For 'this' scope, we allow date changes as it becomes an exception
                         original_date = datetime.strptime(data['original_date'], '%Y-%m-%d').date()
-                        events_to_update_query = events_to_update_query.filter(Event.start_time >= datetime.combine(original_date, datetime.min.time()))
+                        existing_exception = EventExceptions.query.filter_by(original_event_id=event.id, exception_date=original_date).first()
+                        
+                        if existing_exception:
+                            exception = existing_exception
+                        else:
+                            exception = EventExceptions(original_event_id=event.id, exception_date=original_date)
+                            db.session.add(exception)
+                        
+                        exception.title = data.get('title')
+                        exception.description = data.get('description')
+                        exception.priority = int(data.get('priority', 0))
+                        if user.role in ['teacher', 'admin']:
+                            exception.tags = data.get('tags', '')
+                        exception.start_time = new_start
+                        exception.end_time = new_end
+                        
+                        db.session.commit()
+                        return jsonify({'message': 'This occurrence was updated successfully!'})
                     
-                    # Calculate time difference for shifting events
-                    try:
-                        new_start = datetime.fromisoformat(data['start_time'])
-                        new_end = datetime.fromisoformat(data['end_time'])
+                    else: # 'all' or 'future'
+                        events_to_update_query = Event.query.filter_by(recurrence_group_id=event.recurrence_group_id)
+                        if edit_scope == 'future':
+                            original_date = datetime.strptime(data['original_date'], '%Y-%m-%d').date()
+                            events_to_update_query = events_to_update_query.filter(Event.start_time >= datetime.combine(original_date, datetime.min.time()))
+                        
+                        # Store the original times before updating
+                        original_start = event.start_time
+                        original_end = event.end_time
                         
                         # Calculate the time difference between old and new times
-                        # This will be used to shift all events by the same amount
-                        start_delta = new_start - event.start_time
-                        end_delta = new_end - event.end_time
+                        # We only care about time difference, not date difference
+                        time_delta = timedelta(
+                            hours=new_start.hour - original_start.hour,
+                            minutes=new_start.minute - original_start.minute,
+                            seconds=new_start.second - original_start.second
+                        )
+                        
+                        end_time_delta = timedelta(
+                            hours=new_end.hour - original_end.hour,
+                            minutes=new_end.minute - original_end.minute,
+                            seconds=new_end.second - original_end.second
+                        )
                         
                         for e in events_to_update_query.all():
                             e.title = data.get('title')
@@ -325,16 +343,18 @@ def create_app():
                             if user.role in ['teacher', 'admin']:
                                 e.tags = data.get('tags', '')
                             
-                            # Apply the time shifts to each event
-                            e.start_time = e.start_time + start_delta
-                            e.end_time = e.end_time + end_delta
+                            # Apply the time shifts to each event (keeping the same date)
+                            new_start_time = datetime.combine(e.start_time.date(), datetime.min.time()) + time_delta
+                            new_end_time = datetime.combine(e.end_time.date(), datetime.min.time()) + end_time_delta
+                            
+                            e.start_time = new_start_time
+                            e.end_time = new_end_time
                         
                         db.session.commit()
                         return jsonify({'message': 'The event series was updated successfully!'})
-                    except (KeyError, ValueError):
-                        return jsonify({'error': 'Invalid or missing date format'}), 400
+                except (KeyError, ValueError) as e:
+                    return jsonify({'error': f'Invalid or missing date format: {str(e)}'}), 400
             else:
-                # This is the missing part - handle non-recurring events
                 event.title = data.get('title', event.title)
                 event.description = data.get('description', event.description)
                 event.priority = int(data.get('priority', event.priority))
@@ -352,14 +372,39 @@ def create_app():
 
         if request.method == 'DELETE':
             scope = request.args.get('scope', 'single')
+            print(f"DELETE request received for event {event_id}, scope: {scope}")
             
             if event.is_recurring and scope == 'all':
-                Event.query.filter_by(recurrence_group_id=event.recurrence_group_id).delete()
-                db.session.commit()
-                return jsonify({'message': 'The entire event series was deleted.'})
+                # Get the recurrence_group_id from the event
+                group_id = event.recurrence_group_id
+                print(f"This is a recurring event with group_id: {group_id}")
+                
+                if group_id:
+                    # Find and delete all events with this recurrence_group_id
+                    events_to_delete = Event.query.filter_by(recurrence_group_id=group_id).all()
+                    count = len(events_to_delete)
+                    print(f"Found {count} events to delete with recurrence_group_id {group_id}")
+                    
+                    for e in events_to_delete:
+                        print(f"Deleting event {e.id} with title '{e.title}'")
+                        db.session.delete(e)
+                    
+                    db.session.commit()
+                    return jsonify({'message': f'All {count} occurrences of the recurring event were deleted successfully.'})
+                else:
+                    # If somehow the event is marked recurring but has no group_id
+                    db.session.delete(event)
+                    db.session.commit()
+                    return jsonify({'message': 'Event deleted successfully.'})
             
             elif event.is_recurring and scope == 'this':
-                original_date = datetime.fromisoformat(request.args.get('original_date')).date()
+                original_date = event.start_time.date()
+                if request.args.get('original_date'):
+                    try:
+                        original_date = datetime.fromisoformat(request.args.get('original_date')).date()
+                    except ValueError:
+                        pass
+                
                 existing_exception = EventExceptions.query.filter_by(original_event_id=event.id, exception_date=original_date).first()
                 if existing_exception:
                     exception = existing_exception
@@ -389,7 +434,7 @@ def create_app():
         from models.user import User
         from models.event_exceptions import EventExceptions
         if 'user_id' not in session:
-            return jsonify({'error': 'Unauthorised'}), 401
+            return jsonify({'error': 'Unauthorized'}), 401
         user = db.session.get(User, session['user_id'])
         if not user:
             return jsonify({'error': 'User not found'}), 401
@@ -431,7 +476,7 @@ def create_app():
 
         # Get all relevant exceptions in one query
         event_ids = [e.id for e in events if e.is_recurring]
-        exceptions = EventExceptions.query.filter(EventExceptions.original_event_id.in_(event_ids)).all()
+        exceptions = EventExceptions.query.filter(EventExceptions.original_event_id.in_(event_ids)).all() if event_ids else []
         exception_map = {}
         for exc in exceptions:
             key = (exc.original_event_id, exc.exception_date)

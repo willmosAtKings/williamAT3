@@ -10,53 +10,68 @@
   <a href="/dashboard" class="back-button">← Back to Dashboard</a>
 
   <form id="eventForm">
+    <!-- For non-recurring events, show date and time inputs -->
     <div id="singleDayInputs">
-        <div class="input-row">
-          <div class="input-group">
-            <label for="start_date">Start Date:</label>
-            <input type="date" id="start_date">
-          </div>
-          <div class="input-group">
-            <label for="start_time">Start Time:</label>
-            <input type="time" id="start_time">
-          </div>
+      <div class="input-row">
+        <div class="input-group">
+          <label for="start_date">Start Date:</label>
+          <input type="date" id="start_date">
         </div>
-        
-        <div class="input-row">
-          <div class="input-group">
-            <label for="end_date">End Date:</label>
-            <input type="date" id="end_date">
-          </div>
-          <div class="input-group">
-            <label for="end_time">End Time:</label>
-            <input type="time" id="end_time">
-          </div>
+        <div class="input-group">
+          <label for="start_time">Start Time:</label>
+          <input type="time" id="start_time">
         </div>
       </div>
       
+      <div class="input-row">
+        <div class="input-group">
+          <label for="end_date">End Date:</label>
+          <input type="date" id="end_date">
+        </div>
+        <div class="input-group">
+          <label for="end_time">End Time:</label>
+          <input type="time" id="end_time">
+        </div>
+      </div>
+    </div>
+    
+    <!-- For recurring events, only show time inputs -->
+    <div id="recurringTimeInputs" style="display: none;">
+      <div class="input-row">
+        <div class="input-group">
+          <label for="rec_start_time">Start Time:</label>
+          <input type="time" id="rec_start_time">
+        </div>
+        <div class="input-group">
+          <label for="rec_end_time">End Time:</label>
+          <input type="time" id="rec_end_time">
+        </div>
+      </div>
+      <p class="info-text">Note: For recurring events, you can only change the time, not the date.</p>
+    </div>
 
     <div id="recurringEventOptions" style="display: none;">
-        <div class="recurring-notice">
-          <i class="fas fa-repeat"></i> This is a recurring event.
-        </div>
-        
-        <div class="edit-scope-selector">
-          <h3>What would you like to edit?</h3>
-          <div class="radio-option">
-            <input type="radio" id="edit-this" name="edit-scope" value="this" checked>
-            <label for="edit-this">Only this occurrence</label>
-          </div>
-          <div class="radio-option">
-            <input type="radio" id="edit-all" name="edit-scope" value="all">
-            <label for="edit-all">All occurrences in the series</label>
-          </div>
-          <div class="radio-option">
-            <input type="radio" id="edit-future" name="edit-scope" value="future">
-            <label for="edit-future">This and all future occurrences</label>
-          </div>
-        </div>
-        <hr>
+      <div class="recurring-notice">
+        <i class="fas fa-repeat"></i> This is a recurring event.
       </div>
+      
+      <div class="edit-scope-selector">
+        <h3>What would you like to edit?</h3>
+        <div class="radio-option">
+          <input type="radio" id="edit-this" name="edit-scope" value="this" checked>
+          <label for="edit-this">Only this occurrence</label>
+        </div>
+        <div class="radio-option">
+          <input type="radio" id="edit-all" name="edit-scope" value="all">
+          <label for="edit-all">All occurrences in the series</label>
+        </div>
+        <div class="radio-option">
+          <input type="radio" id="edit-future" name="edit-scope" value="future">
+          <label for="edit-future">This and all future occurrences</label>
+        </div>
+      </div>
+      <hr>
+    </div>
     
     <br><hr><br>
 
@@ -74,17 +89,17 @@
     </select><br>
 
     <div id="tag-section">
-        <div class="form-group">
-            <label>Tags</label>
-            <div class="mega-menu-container">
-                <div id="tag-selector-button" class="tag-selector-button">
-                    <span>Select Tags...</span>
-                </div>
-                <div id="mega-menu-dropdown" class="mega-menu-dropdown"></div>
-                <input type="hidden" name="tags" id="selected-tags-input">
-            </div>
-            <div id="selected-tags-display" class="selected-tags-display"></div>
+      <div class="form-group">
+        <label>Tags</label>
+        <div class="mega-menu-container">
+          <div id="tag-selector-button" class="tag-selector-button">
+            <span>Select Tags...</span>
+          </div>
+          <div id="mega-menu-dropdown" class="mega-menu-dropdown"></div>
+          <input type="hidden" name="tags" id="selected-tags-input">
         </div>
+        <div id="selected-tags-display" class="selected-tags-display"></div>
+      </div>
     </div>
 
     <!-- Form Actions -->
