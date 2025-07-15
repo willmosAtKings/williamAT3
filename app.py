@@ -20,6 +20,7 @@ def create_app():
     with app.app_context():
         from models.event import Event
         from models.user import User
+        from models.event_exceptions import EventException # Import the new model
 
     # ... (other routes are correct and remain the same) ...
     @app.route('/')
@@ -227,11 +228,11 @@ def create_app():
             return redirect(url_for('dashboard'))
         return render_template('edit_event.html', event_id=event_id, user_role=user.role)
 
-    # --- THIS IS THE UPDATED ROUTE ---
     @app.route('/api/event/<int:event_id>', methods=['GET', 'POST', 'DELETE'])
     def handle_event(event_id):
         from models.event import Event
         from models.user import User
+        from models.event_exceptions import EventException
         
         if 'user_id' not in session:
             return jsonify({'error': 'Unauthorized'}), 401
@@ -242,7 +243,6 @@ def create_app():
         if not event:
             return jsonify({'error': 'Event not found'}), 404
             
-        # Permission check logic
         can_modify = False
         if user.role == 'admin':
             can_modify = True
@@ -272,85 +272,99 @@ def create_app():
             if not data:
                 return jsonify({'error': 'Invalid JSON'}), 400
 
-            event.title = data.get('title', event.title)
-            event.description = data.get('description', event.description)
-            event.priority = data.get('priority', event.priority)
+            if event.is_recurring and 'edit_scope' in data:
+                edit_scope = data.get('edit_scope')
+                
+                if edit_scope == 'this':
+                    original_date = datetime.strptime(data['original_date'], '%Y-%m-%d').date()
+                    existing_exception = EventException.query.filter_by(original_event_id=event.id, exception_date=original_date).first()
+                    
+                    if existing_exception:
+                        exception = existing_exception
+                    else:
+                        exception = EventException(original_event_id=event.id, exception_date=original_date)
+                        db.session.add(exception)
+                    
+                    exception.title = data.get('title')
+                    exception.description = data.get('description')
+                    exception.priority = int(data.get('priority', 0))
+                    if user.role in ['teacher', 'admin']:
+                        exception.tags = data.get('tags', '')
+                    exception.start_time = datetime.fromisoformat(data['start_time'])
+                    exception.end_time = datetime.fromisoformat(data['end_time'])
+                    
+                    db.session.commit()
+                    return jsonify({'message': 'This occurrence was updated successfully!'})
+                
+                else: # 'all' or 'future'
+                    events_to_update_query = Event.query.filter_by(recurrence_group_id=event.recurrence_group_id)
+                    if edit_scope == 'future':
+                        original_date = datetime.strptime(data['original_date'], '%Y-%m-%d').date()
+                        events_to_update_query = events_to_update_query.filter(Event.start_time >= datetime.combine(original_date, datetime.min.time()))
+                    
+                    for e in events_to_update_query.all():
+                        e.title = data.get('title')
+                        e.description = data.get('description')
+                        e.priority = int(data.get('priority', 0))
+                        if user.role in ['teacher', 'admin']:
+                            e.tags = data.get('tags', '')
+                    
+                    db.session.commit()
+                    return jsonify({'message': 'The event series was updated successfully!'})
             
-            if user.role in ['teacher', 'admin']:
-                event.tags = data.get('tags', event.tags)
             else:
-                event.tags = ''
-
-            try:
-                event.start_time = datetime.fromisoformat(data['start_time'])
-                event.end_time = datetime.fromisoformat(data['end_time'])
-            except (KeyError, ValueError):
-                return jsonify({'error': 'Invalid or missing date format'}), 400
-
-            if event.end_time <= event.start_time:
-                return jsonify({'error': 'End time must be after the start time.'}), 400
-
-            db.session.commit()
-            return jsonify({'message': 'Event updated successfully!'})
+                event.title = data.get('title', event.title)
+                event.description = data.get('description', event.description)
+                event.priority = int(data.get('priority', event.priority))
+                if user.role in ['teacher', 'admin']:
+                    event.tags = data.get('tags', event.tags)
+                try:
+                    event.start_time = datetime.fromisoformat(data['start_time'])
+                    event.end_time = datetime.fromisoformat(data['end_time'])
+                except (KeyError, ValueError):
+                    return jsonify({'error': 'Invalid or missing date format'}), 400
+                if event.end_time <= event.start_time:
+                    return jsonify({'error': 'End time must be after the start time.'}), 400
+                db.session.commit()
+                return jsonify({'message': 'Event updated successfully!'})
 
         if request.method == 'DELETE':
-            # If it's a recurring event, delete the entire series
-            if event.is_recurring and event.recurrence_group_id:
-                Event.query.filter_by(recurrence_group_id=event.recurrence_group_id).delete()
-            else:
-                # Otherwise, just delete the single event
-                db.session.delete(event)
+            scope = request.args.get('scope', 'single')
             
-            db.session.commit()
-            return jsonify({'message': 'Event deleted successfully.'})
-
-    # ... (profile routes are correct and remain the same) ...
-    @app.route('/profile/info')
-    def profile():
-        user_id = session.get('user_id')
-        if user_id:
-            from models.user import User
-            user = db.session.get(User, user_id)
-            return render_template('profile/info.html', user=user)
-        return redirect('/login')
-    
-    @app.route('/profile/account')
-    def account():
-        return render_template('profile/account.html')
-    
-    @app.route('/profile/privacy')
-    def privacy():
-        return render_template('profile/privacy.html')
-    
-    @app.route('/profile/preferences')
-    def preferences():
-        from models.user import User
-        user_id = session.get('user_id')
-        if not user_id:
-            return redirect(url_for('login'))
-        user = db.session.get(User, user_id)
-        return render_template('profile/preferences.html', current_tags=user.profile_tags or '')
-
-    @app.route('/api/profile/tags', methods=['POST'])
-    def update_profile_tags():
-        from models.user import User
-        if 'user_id' not in session:
-            return jsonify({'error': 'Unauthorized'}), 401
-        user = db.session.get(User, session['user_id'])
-        if not user:
-            return jsonify({'error': 'User not found'}), 401
-        data = request.get_json()
-        if data is None:
-            return jsonify({'error': 'Invalid JSON'}), 400
-        new_tags = data.get('tags', '')
-        user.profile_tags = new_tags
-        db.session.commit()
-        return jsonify({'message': 'Your tags have been updated successfully!'}), 200
+            if event.is_recurring and scope == 'all':
+                Event.query.filter_by(recurrence_group_id=event.recurrence_group_id).delete()
+                db.session.commit()
+                return jsonify({'message': 'The entire event series was deleted.'})
+            
+            elif event.is_recurring and scope == 'this':
+                original_date = datetime.fromisoformat(request.args.get('original_date')).date()
+                existing_exception = EventException.query.filter_by(original_event_id=event.id, exception_date=original_date).first()
+                if existing_exception:
+                    exception = existing_exception
+                else:
+                    exception = EventException(original_event_id=event.id, exception_date=original_date)
+                    db.session.add(exception)
+                
+                exception.title = None
+                exception.description = None
+                exception.priority = None
+                exception.tags = None
+                exception.start_time = None
+                exception.end_time = None
+                
+                db.session.commit()
+                return jsonify({'message': 'This occurrence of the event was deleted.'})
+            
+            else:
+                db.session.delete(event)
+                db.session.commit()
+                return jsonify({'message': 'Event deleted successfully.'})
 
     @app.route('/api/events')
     def get_events():
         from models.event import Event
         from models.user import User
+        from models.event_exceptions import EventException
         if 'user_id' not in session:
             return jsonify({'error': 'Unauthorized'}), 401
         user = db.session.get(User, session['user_id'])
@@ -386,22 +400,71 @@ def create_app():
                 )
             except Exception:
                 return jsonify({'error': 'Invalid date format'}), 400
+        
         events = query.all()
-        return jsonify([
-            {
-                'id': e.id,
-                'title': e.title,
-                'description': e.description,
-                'priority': e.priority,
-                'tags': e.tags,
-                'start_time': e.start_time.isoformat(),
-                'end_time': e.end_time.isoformat(),
-                'creator_id': e.creator_id,
-                'creator_role': e.creator.role,
-                'is_recurring': e.is_recurring,
-                'recurrence_group_id': e.recurrence_group_id
-            } for e in events
-        ])
+        
+        final_events = []
+        processed_exceptions = set()
+
+        # Get all relevant exceptions in one query
+        event_ids = [e.id for e in events if e.is_recurring]
+        exceptions = EventException.query.filter(EventException.original_event_id.in_(event_ids)).all()
+        exception_map = {}
+        for exc in exceptions:
+            key = (exc.original_event_id, exc.exception_date)
+            exception_map[key] = exc
+
+        for event in events:
+            if event.is_recurring:
+                exception = exception_map.get((event.id, event.start_time.date()))
+                if exception:
+                    processed_exceptions.add(exception.id)
+                    if exception.title is None: # Deleted occurrence
+                        continue
+                    else: # Modified occurrence
+                        final_events.append({
+                            'id': event.id,
+                            'title': exception.title,
+                            'description': exception.description,
+                            'priority': exception.priority,
+                            'tags': exception.tags,
+                            'start_time': exception.start_time.isoformat(),
+                            'end_time': exception.end_time.isoformat(),
+                            'creator_id': event.creator_id,
+                            'creator_role': event.creator.role,
+                            'is_recurring': True,
+                            'recurrence_group_id': event.recurrence_group_id,
+                            'is_exception': True
+                        })
+                else:
+                    final_events.append({
+                        'id': event.id,
+                        'title': event.title,
+                        'description': event.description,
+                        'priority': event.priority,
+                        'tags': event.tags,
+                        'start_time': event.start_time.isoformat(),
+                        'end_time': event.end_time.isoformat(),
+                        'creator_id': event.creator_id,
+                        'creator_role': event.creator.role,
+                        'is_recurring': True,
+                        'recurrence_group_id': event.recurrence_group_id
+                    })
+            else:
+                final_events.append({
+                    'id': event.id,
+                    'title': event.title,
+                    'description': event.description,
+                    'priority': event.priority,
+                    'tags': event.tags,
+                    'start_time': event.start_time.isoformat(),
+                    'end_time': event.end_time.isoformat(),
+                    'creator_id': event.creator_id,
+                    'creator_role': event.creator.role,
+                    'is_recurring': False
+                })
+        
+        return jsonify(final_events)
 
     return app
 
