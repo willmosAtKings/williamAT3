@@ -10,23 +10,17 @@
   <a href="/dashboard" class="back-button">← Back to Dashboard</a>
 
   <form id="eventForm">
-    <!-- For non-recurring events, show date and time inputs -->
+    <!-- For non-recurring events, show one date with start and end times -->
     <div id="singleDayInputs">
-      <div class="input-row">
-        <div class="input-group">
-          <label for="start_date">Start Date:</label>
-          <input type="date" id="start_date">
-        </div>
-        <div class="input-group">
-          <label for="start_time">Start Time:</label>
-          <input type="time" id="start_time">
-        </div>
+      <div class="input-group full-width">
+        <label for="event_date">Date:</label>
+        <input type="date" id="event_date">
       </div>
       
       <div class="input-row">
         <div class="input-group">
-          <label for="end_date">End Date:</label>
-          <input type="date" id="end_date">
+          <label for="start_time">Start Time:</label>
+          <input type="time" id="start_time">
         </div>
         <div class="input-group">
           <label for="end_time">End Time:</label>
