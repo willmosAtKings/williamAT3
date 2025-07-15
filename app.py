@@ -20,7 +20,7 @@ def create_app():
     with app.app_context():
         from models.event import Event
         from models.user import User
-        from models.event_exceptions import EventException # Import the new model
+        from models.event_exceptions import EventExceptions # Import the new model
 
     # ... (other routes are correct and remain the same) ...
     @app.route('/')
@@ -232,7 +232,7 @@ def create_app():
     def handle_event(event_id):
         from models.event import Event
         from models.user import User
-        from models.event_exceptions import EventException
+        from models.event_exceptions import EventExceptions
         
         if 'user_id' not in session:
             return jsonify({'error': 'Unauthorized'}), 401
@@ -277,12 +277,12 @@ def create_app():
                 
                 if edit_scope == 'this':
                     original_date = datetime.strptime(data['original_date'], '%Y-%m-%d').date()
-                    existing_exception = EventException.query.filter_by(original_event_id=event.id, exception_date=original_date).first()
+                    existing_exception = EventExceptions.query.filter_by(original_event_id=event.id, exception_date=original_date).first()
                     
                     if existing_exception:
                         exception = existing_exception
                     else:
-                        exception = EventException(original_event_id=event.id, exception_date=original_date)
+                        exception = EventExceptions(original_event_id=event.id, exception_date=original_date)
                         db.session.add(exception)
                     
                     exception.title = data.get('title')
@@ -338,11 +338,11 @@ def create_app():
             
             elif event.is_recurring and scope == 'this':
                 original_date = datetime.fromisoformat(request.args.get('original_date')).date()
-                existing_exception = EventException.query.filter_by(original_event_id=event.id, exception_date=original_date).first()
+                existing_exception = EventExceptions.query.filter_by(original_event_id=event.id, exception_date=original_date).first()
                 if existing_exception:
                     exception = existing_exception
                 else:
-                    exception = EventException(original_event_id=event.id, exception_date=original_date)
+                    exception = EventExceptions(original_event_id=event.id, exception_date=original_date)
                     db.session.add(exception)
                 
                 exception.title = None
@@ -364,7 +364,7 @@ def create_app():
     def get_events():
         from models.event import Event
         from models.user import User
-        from models.event_exceptions import EventException
+        from models.event_exceptions import EventExceptions
         if 'user_id' not in session:
             return jsonify({'error': 'Unauthorized'}), 401
         user = db.session.get(User, session['user_id'])
@@ -408,7 +408,7 @@ def create_app():
 
         # Get all relevant exceptions in one query
         event_ids = [e.id for e in events if e.is_recurring]
-        exceptions = EventException.query.filter(EventException.original_event_id.in_(event_ids)).all()
+        exceptions = EventExceptions.query.filter(EventExceptions.original_event_id.in_(event_ids)).all()
         exception_map = {}
         for exc in exceptions:
             key = (exc.original_event_id, exc.exception_date)

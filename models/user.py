@@ -7,15 +7,12 @@ class User(db.Model):
     __tablename__ = 'users'
 
     id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(100), nullable=False, unique=True)
     email = db.Column(db.String(120), unique=True, nullable=False)
     password_hash = db.Column(db.String(200), nullable=False)
     role = db.Column(db.String(20), nullable=False)  # 'student', 'teacher', 'admin'
 
-    # --- NEW COLUMN ---
     # This will store user-chosen tags like "chess-club,year-12" as a string.
     profile_tags = db.Column(db.String(255), nullable=True)
-    # --- END NEW COLUMN ---
 
     session_token = db.Column(db.String(64), unique=True, index=True)
     session_expiry = db.Column(db.DateTime, nullable=True)
@@ -23,7 +20,6 @@ class User(db.Model):
 
     events = db.relationship("Event", backref="creator", lazy=True)
 
-    # --- UPDATED PROPERTY ---
     # This property now combines role-based tags with profile tags.
     @property
     def tags(self):
@@ -39,10 +35,8 @@ class User(db.Model):
             
         # Return the final, unique list of tags.
         return list(user_tags_set)
-    # --- END UPDATED PROPERTY ---
 
-    def __init__(self, username, email, password, role):
-        self.username = username.strip()
+    def __init__(self, email, password, role):
         self.email = email.strip()
         self.set_password(password)
         self.role = role

@@ -46,8 +46,3 @@ document.getElementById('LgnBtn').addEventListener('click', function () {
     });
     
 });
-
-
-
-
-  

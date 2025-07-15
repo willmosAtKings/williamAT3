@@ -1,6 +1,6 @@
 from extensions import db
 
-class EventException(db.Model):
+class EventExceptions(db.Model):
     __tablename__ = 'event_exceptions'
 
     id = db.Column(db.Integer, primary_key=True)
