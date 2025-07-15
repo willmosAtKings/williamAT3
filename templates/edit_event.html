@@ -18,6 +18,29 @@
       <input type="datetime-local" id="end_time">
     </div>
     
+    <div id="recurringEventOptions" style="display: none;">
+        <div class="recurring-notice">
+          <i class="fas fa-repeat"></i> This is a recurring event.
+        </div>
+        
+        <div class="edit-scope-selector">
+          <h3>What would you like to edit?</h3>
+          <div class="radio-option">
+            <input type="radio" id="edit-this" name="edit-scope" value="this" checked>
+            <label for="edit-this">Only this occurrence</label>
+          </div>
+          <div class="radio-option">
+            <input type="radio" id="edit-all" name="edit-scope" value="all">
+            <label for="edit-all">All occurrences in the series</label>
+          </div>
+          <div class="radio-option">
+            <input type="radio" id="edit-future" name="edit-scope" value="future">
+            <label for="edit-future">This and all future occurrences</label>
+          </div>
+        </div>
+        <hr>
+      </div>
+    
     <br><hr><br>
 
     <label>Title:</label>
