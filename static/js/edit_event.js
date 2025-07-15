@@ -131,17 +131,22 @@ document.addEventListener('DOMContentLoaded', () => {
             const startDateTime = new Date(eventData.start_time);
             const endDateTime = new Date(eventData.end_time);
             
-            // Format date as YYYY-MM-DD
-            const eventDate = startDateTime.toISOString().split('T')[0];
+            // Format dates as YYYY-MM-DD
+            const startDate = startDateTime.toISOString().split('T')[0];
+            const endDate = endDateTime.toISOString().split('T')[0];
             
-            // Format time as HH:MM
+            // Format times as HH:MM
             const startTime = startDateTime.toTimeString().slice(0, 5);
             const endTime = endDateTime.toTimeString().slice(0, 5);
             
-            // Show different inputs based on whether it's a recurring event
+            // Determine if this is a multi-day event
+            const isMultiDay = startDate !== endDate;
+            
+            // Show different inputs based on event type
             if (eventData.is_recurring) {
                 // For recurring events, only show time inputs
                 document.getElementById('singleDayInputs').style.display = 'none';
+                document.getElementById('multiDayInputs').style.display = 'none';
                 document.getElementById('recurringTimeInputs').style.display = 'block';
                 
                 document.getElementById('rec_start_time').value = startTime;
@@ -151,7 +156,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const hiddenStartDate = document.createElement('input');
                 hiddenStartDate.type = 'hidden';
                 hiddenStartDate.id = 'hidden_start_date';
-                hiddenStartDate.value = eventDate;
+                hiddenStartDate.value = startDate;
                 form.appendChild(hiddenStartDate);
                 
                 // Show recurring options
@@ -169,17 +174,28 @@ document.addEventListener('DOMContentLoaded', () => {
                     const hiddenOrigDate = document.createElement('input');
                     hiddenOrigDate.type = 'hidden';
                     hiddenOrigDate.id = 'original_date';
-                    hiddenOrigDate.value = eventDate;
+                    hiddenOrigDate.value = startDate;
                     form.appendChild(hiddenOrigDate);
                 }
-            } else {
-                // For non-recurring events, show date and time inputs
-                document.getElementById('singleDayInputs').style.display = 'block';
+            } else if (isMultiDay) {
+                // For multi-day events, show separate start/end date and time inputs
+                document.getElementById('singleDayInputs').style.display = 'none';
+                document.getElementById('multiDayInputs').style.display = 'block';
                 document.getElementById('recurringTimeInputs').style.display = 'none';
                 
-                document.getElementById('event_date').value = eventDate;
-                document.getElementById('start_time').value = startTime;
-                document.getElementById('end_time').value = endTime;
+                document.getElementById('multi_start_date').value = startDate;
+                document.getElementById('multi_start_time').value = startTime;
+                document.getElementById('multi_end_date').value = endDate;
+                document.getElementById('multi_end_time').value = endTime;
+            } else {
+                // For single-day events, show one date with start/end times
+                document.getElementById('singleDayInputs').style.display = 'block';
+                document.getElementById('multiDayInputs').style.display = 'none';
+                document.getElementById('recurringTimeInputs').style.display = 'none';
+                
+                document.getElementById('event_date').value = startDate;
+                document.getElementById('single_start_time').value = startTime;
+                document.getElementById('single_end_time').value = endTime;
             }
 
             // Tags handling
@@ -199,6 +215,80 @@ document.addEventListener('DOMContentLoaded', () => {
             window.location.href = '/dashboard';
         }
     }
+
+    // --- FORM SUBMISSION (UPDATE) ---
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        let startDateTime, endDateTime;
+        
+        // Get the appropriate date and time values based on event type
+        if (document.getElementById('recurringTimeInputs').style.display !== 'none') {
+            // Recurring event - combine hidden dates with visible times
+            const startDate = document.getElementById('hidden_start_date').value;
+            const startTime = document.getElementById('rec_start_time').value;
+            
+            startDateTime = `${startDate}T${startTime}:00`;
+            endDateTime = `${startDate}T${document.getElementById('rec_end_time').value}:00`;
+        } else if (document.getElementById('multiDayInputs').style.display !== 'none') {
+            // Multi-day event - combine separate start/end dates and times
+            const startDate = document.getElementById('multi_start_date').value;
+            const startTime = document.getElementById('multi_start_time').value;
+            const endDate = document.getElementById('multi_end_date').value;
+            const endTime = document.getElementById('multi_end_time').value;
+            
+            startDateTime = `${startDate}T${startTime}:00`;
+            endDateTime = `${endDate}T${endTime}:00`;
+        } else {
+            // Single-day event - combine one date with start/end times
+            const eventDate = document.getElementById('event_date').value;
+            const startTime = document.getElementById('single_start_time').value;
+            const endTime = document.getElementById('single_end_time').value;
+            
+            startDateTime = `${eventDate}T${startTime}:00`;
+            endDateTime = `${eventDate}T${endTime}:00`;
+        }
+
+        const payload = {
+            title: document.getElementById('title').value,
+            description: document.getElementById('description').value,
+            priority: parseInt(document.getElementById('priority').value),
+            start_time: startDateTime,
+            end_time: endDateTime,
+            tags: selectedTagsInput ? selectedTagsInput.value : ''
+        };
+
+        // Add recurring event data if applicable
+        const recurringOptions = document.getElementById('recurringEventOptions');
+        if (recurringOptions && recurringOptions.style.display !== 'none') {
+            const editScope = document.querySelector('input[name="edit-scope"]:checked').value;
+            payload.edit_scope = editScope;
+            payload.recurrence_group_id = document.getElementById('recurrence_group_id').value;
+            payload.original_date = document.getElementById('original_date').value;
+        }
+
+        console.log("Submitting payload:", payload);
+
+        try {
+            const response = await fetch(`/api/event/${eventId}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            const result = await response.json();
+            if (response.ok) {
+                alert(result.message);
+                window.location.href = '/dashboard';
+            } else {
+                throw new Error(result.error || 'Failed to update event.');
+            }
+        } catch (error) {
+            console.error("Error:", error);
+            alert(error.message);
+        }
+    });
+
 
     // --- FORM SUBMISSION (UPDATE) ---
     form.addEventListener('submit', async (e) => {

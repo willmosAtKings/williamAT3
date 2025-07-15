@@ -10,8 +10,8 @@
   <a href="/dashboard" class="back-button">← Back to Dashboard</a>
 
   <form id="eventForm">
-    <!-- For non-recurring events, show one date with start and end times -->
-    <div id="singleDayInputs">
+    <!-- For single-day events -->
+    <div id="singleDayInputs" style="display: none;">
       <div class="input-group full-width">
         <label for="event_date">Date:</label>
         <input type="date" id="event_date">
@@ -19,12 +19,37 @@
       
       <div class="input-row">
         <div class="input-group">
-          <label for="start_time">Start Time:</label>
-          <input type="time" id="start_time">
+          <label for="single_start_time">Start Time:</label>
+          <input type="time" id="single_start_time">
         </div>
         <div class="input-group">
-          <label for="end_time">End Time:</label>
-          <input type="time" id="end_time">
+          <label for="single_end_time">End Time:</label>
+          <input type="time" id="single_end_time">
+        </div>
+      </div>
+    </div>
+    
+    <!-- For multi-day events -->
+    <div id="multiDayInputs" style="display: none;">
+      <div class="input-row">
+        <div class="input-group">
+          <label for="multi_start_date">Start Date:</label>
+          <input type="date" id="multi_start_date">
+        </div>
+        <div class="input-group">
+          <label for="multi_start_time">Start Time:</label>
+          <input type="time" id="multi_start_time">
+        </div>
+      </div>
+      
+      <div class="input-row">
+        <div class="input-group">
+          <label for="multi_end_date">End Date:</label>
+          <input type="date" id="multi_end_date">
+        </div>
+        <div class="input-group">
+          <label for="multi_end_time">End Time:</label>
+          <input type="time" id="multi_end_time">
         </div>
       </div>
     </div>
