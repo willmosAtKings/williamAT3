@@ -11,13 +11,30 @@
 
   <form id="eventForm">
     <div id="singleDayInputs">
-      <label for="start_time">Start Time:</label>
-      <input type="datetime-local" id="start_time">
+        <div class="input-row">
+          <div class="input-group">
+            <label for="start_date">Start Date:</label>
+            <input type="date" id="start_date">
+          </div>
+          <div class="input-group">
+            <label for="start_time">Start Time:</label>
+            <input type="time" id="start_time">
+          </div>
+        </div>
+        
+        <div class="input-row">
+          <div class="input-group">
+            <label for="end_date">End Date:</label>
+            <input type="date" id="end_date">
+          </div>
+          <div class="input-group">
+            <label for="end_time">End Time:</label>
+            <input type="time" id="end_time">
+          </div>
+        </div>
+      </div>
       
-      <label for="end_time">End Time:</label>
-      <input type="datetime-local" id="end_time">
-    </div>
-    
+
     <div id="recurringEventOptions" style="display: none;">
         <div class="recurring-notice">
           <i class="fas fa-repeat"></i> This is a recurring event.
