@@ -15,7 +15,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const form = document.getElementById('eventForm');
     const userRole = document.body.dataset.userRole;
     const tagSection = document.getElementById('tag-section');
-    const deleteButton = document.getElementById('deleteEventBtn'); // Get the delete button
+    const deleteButton = document.getElementById('deleteEventBtn');
     const megaMenuDropdown = document.getElementById('mega-menu-dropdown');
     const tagSelectorButton = document.getElementById('tag-selector-button');
     const selectedTagsInput = document.getElementById('selected-tags-input');
@@ -216,7 +216,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // --- FORM SUBMISSION ---
+    // --- FORM SUBMISSION (UPDATE) - SINGLE EVENT LISTENER ---
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
 
@@ -261,141 +261,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Add recurring event data if applicable
         const recurringOptions = document.getElementById('recurringEventOptions');
         if (recurringOptions && recurringOptions.style.display !== 'none') {
-            const editScope = document.getElementById('edit-scope-dropdown').value; // Changed from radio button to dropdown
-            payload.edit_scope = editScope;
-            payload.recurrence_group_id = document.getElementById('recurrence_group_id').value;
-            payload.original_date = document.getElementById('original_date').value;
-        }
-
-        console.log("Submitting payload:", payload);
-
-        try {
-            const response = await fetch(`/api/event/${eventId}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
-
-            const result = await response.json();
-            if (response.ok) {
-                alert(result.message);
-                window.location.href = '/dashboard';
-            } else {
-                throw new Error(result.error || 'Failed to update event.');
-            }
-        } catch (error) {
-            console.error("Error:", error);
-            alert(error.message);
-        }
-    });
-
-
-
-    // --- FORM SUBMISSION (UPDATE) ---
-    form.addEventListener('submit', async (e) => {
-        e.preventDefault();
-
-        let startDateTime, endDateTime;
-        
-        // Get the appropriate date and time values based on event type
-        if (document.getElementById('recurringTimeInputs').style.display !== 'none') {
-            // Recurring event - combine hidden dates with visible times
-            const startDate = document.getElementById('hidden_start_date').value;
-            const startTime = document.getElementById('rec_start_time').value;
-            
-            startDateTime = `${startDate}T${startTime}:00`;
-            endDateTime = `${startDate}T${document.getElementById('rec_end_time').value}:00`;
-        } else {
-            // Non-recurring event - combine visible date with times
-            const eventDate = document.getElementById('event_date').value;
-            const startTime = document.getElementById('start_time').value;
-            const endTime = document.getElementById('end_time').value;
-            
-            startDateTime = `${eventDate}T${startTime}:00`;
-            endDateTime = `${eventDate}T${endTime}:00`;
-        }
-
-        const payload = {
-            title: document.getElementById('title').value,
-            description: document.getElementById('description').value,
-            priority: parseInt(document.getElementById('priority').value),
-            start_time: startDateTime,
-            end_time: endDateTime,
-            tags: selectedTagsInput ? selectedTagsInput.value : ''
-        };
-
-        // Add recurring event data if applicable
-        const recurringOptions = document.getElementById('recurringEventOptions');
-        if (recurringOptions && recurringOptions.style.display !== 'none') {
-            const editScope = document.querySelector('input[name="edit-scope"]:checked').value;
-            payload.edit_scope = editScope;
-            payload.recurrence_group_id = document.getElementById('recurrence_group_id').value;
-            payload.original_date = document.getElementById('original_date').value;
-        }
-
-        console.log("Submitting payload:", payload);
-
-        try {
-            const response = await fetch(`/api/event/${eventId}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
-
-            const result = await response.json();
-            if (response.ok) {
-                alert(result.message);
-                window.location.href = '/dashboard';
-            } else {
-                throw new Error(result.error || 'Failed to update event.');
-            }
-        } catch (error) {
-            console.error("Error:", error);
-            alert(error.message);
-        }
-    });
-
-
-    // --- FORM SUBMISSION (UPDATE) ---
-    form.addEventListener('submit', async (e) => {
-        e.preventDefault();
-
-        let startDateTime, endDateTime;
-        
-        // Get the appropriate date and time values based on event type
-        if (document.getElementById('recurringTimeInputs').style.display !== 'none') {
-            // Recurring event - combine hidden dates with visible times
-            const startDate = document.getElementById('hidden_start_date').value;
-            const startTime = document.getElementById('rec_start_time').value;
-            const endDate = document.getElementById('hidden_end_date').value;
-            const endTime = document.getElementById('rec_end_time').value;
-            
-            startDateTime = `${startDate}T${startTime}:00`;
-            endDateTime = `${endDate}T${endTime}:00`;
-        } else {
-            // Non-recurring event - combine visible dates and times
-            const startDate = document.getElementById('start_date').value;
-            const startTime = document.getElementById('start_time').value;
-            const endDate = document.getElementById('end_date').value;
-            const endTime = document.getElementById('end_time').value;
-            
-            startDateTime = `${startDate}T${startTime}:00`;
-            endDateTime = `${endDate}T${endTime}:00`;
-        }
-
-        const payload = {
-            title: document.getElementById('title').value,
-            description: document.getElementById('description').value,
-            priority: parseInt(document.getElementById('priority').value),
-            start_time: startDateTime,
-            end_time: endDateTime,
-            tags: selectedTagsInput ? selectedTagsInput.value : ''
-        };
-
-        // Add recurring event data if applicable
-        const recurringOptions = document.getElementById('recurringEventOptions');
-        if (recurringOptions && recurringOptions.style.display !== 'none') {
-            const editScope = document.querySelector('input[name="edit-scope"]:checked').value;
+            const editScope = document.getElementById('edit-scope-dropdown').value;
             payload.edit_scope = editScope;
             payload.recurrence_group_id = document.getElementById('recurrence_group_id').value;
             payload.original_date = document.getElementById('original_date').value;
@@ -428,19 +294,24 @@ document.addEventListener('DOMContentLoaded', () => {
         const recurringOptions = document.getElementById('recurringEventOptions');
         let confirmationText = "Are you sure you want to delete this event? This action cannot be undone.";
         
-        // If it's a recurring event, ask which instances to delete
+        // If it's a recurring event, get the scope from dropdown
         let deleteScope = 'single';
         let originalDate = '';
         
         if (recurringOptions && recurringOptions.style.display !== 'none') {
-            const result = confirm("This is a recurring event. Do you want to delete all occurrences in the series?");
-            if (result) {
+            const editScopeDropdown = document.getElementById('edit-scope-dropdown');
+            const selectedScope = editScopeDropdown.value;
+            
+            if (selectedScope === 'all') {
                 deleteScope = 'all';
                 confirmationText = "Are you sure you want to delete ALL occurrences of this recurring event? This action cannot be undone.";
-            } else {
+            } else if (selectedScope === 'this') {
                 deleteScope = 'this';
                 confirmationText = "Are you sure you want to delete only this occurrence of the recurring event? This action cannot be undone.";
-                // Get the original date from the hidden input
+                originalDate = document.getElementById('original_date')?.value || '';
+            } else if (selectedScope === 'future') {
+                deleteScope = 'future';
+                confirmationText = "Are you sure you want to delete this and all future occurrences of the recurring event? This action cannot be undone.";
                 originalDate = document.getElementById('original_date')?.value || '';
             }
         }
@@ -448,7 +319,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (confirm(confirmationText)) {
             try {
                 let url = `/api/event/${eventId}?scope=${deleteScope}`;
-                if (deleteScope === 'this' && originalDate) {
+                if ((deleteScope === 'this' || deleteScope === 'future') && originalDate) {
                     url += `&original_date=${originalDate}`;
                 }
                 
