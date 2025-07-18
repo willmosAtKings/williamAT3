@@ -216,7 +216,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // --- FORM SUBMISSION (UPDATE) ---
+    // --- FORM SUBMISSION ---
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
 
@@ -261,7 +261,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Add recurring event data if applicable
         const recurringOptions = document.getElementById('recurringEventOptions');
         if (recurringOptions && recurringOptions.style.display !== 'none') {
-            const editScope = document.querySelector('input[name="edit-scope"]:checked').value;
+            const editScope = document.getElementById('edit-scope-dropdown').value; // Changed from radio button to dropdown
             payload.edit_scope = editScope;
             payload.recurrence_group_id = document.getElementById('recurrence_group_id').value;
             payload.original_date = document.getElementById('original_date').value;
@@ -288,6 +288,7 @@ document.addEventListener('DOMContentLoaded', () => {
             alert(error.message);
         }
     });
+
 
 
     // --- FORM SUBMISSION (UPDATE) ---

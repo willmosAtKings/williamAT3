@@ -320,3 +320,58 @@ font-weight: bold;
   width: 100%;
   margin-bottom: 15px;
 }
+
+/* Recurring Event Options Styling */
+.recurring-notice {
+  background-color: #e3f2fd;
+  color: #1565c0;
+  padding: 0.75rem;
+  border-radius: 6px;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 500;
+}
+
+.edit-scope-selector {
+  margin-bottom: 1rem;
+}
+
+.edit-scope-selector label {
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 0.5rem;
+  display: block;
+}
+
+.edit-scope-selector select {
+  width: 100%;
+  padding: 0.6rem;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 1rem;
+  font-family: inherit;
+  background-color: #fff;
+  cursor: pointer;
+  transition: border-color 0.3s;
+}
+
+.edit-scope-selector select:focus {
+  border-color: #1a73e8;
+  outline: none;
+}
+
+#recurringEventOptions {
+  background-color: #f8f9fa;
+  padding: 1.5rem;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
+  margin-bottom: 1rem;
+}
+
+#recurringEventOptions hr {
+  border: none;
+  border-top: 1px solid #dee2e6;
+  margin: 1rem 0 0 0;
+}

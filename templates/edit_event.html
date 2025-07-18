@@ -75,19 +75,12 @@
       </div>
       
       <div class="edit-scope-selector">
-        <h3>What would you like to edit?</h3>
-        <div class="radio-option">
-          <input type="radio" id="edit-this" name="edit-scope" value="this" checked>
-          <label for="edit-this">Only this occurrence</label>
-        </div>
-        <div class="radio-option">
-          <input type="radio" id="edit-all" name="edit-scope" value="all">
-          <label for="edit-all">All occurrences in the series</label>
-        </div>
-        <div class="radio-option">
-          <input type="radio" id="edit-future" name="edit-scope" value="future">
-          <label for="edit-future">This and all future occurrences</label>
-        </div>
+        <label for="edit-scope-dropdown">What would you like to edit?</label>
+        <select id="edit-scope-dropdown" name="edit-scope">
+          <option value="this">Only this occurrence</option>
+          <option value="all">All occurrences in the series</option>
+          <option value="future">This and all future occurrences</option>
+        </select>
       </div>
       <hr>
     </div>
