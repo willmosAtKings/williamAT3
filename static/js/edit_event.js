@@ -21,6 +21,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const selectedTagsInput = document.getElementById('selected-tags-input');
     const selectedTagsDisplay = document.getElementById('selected-tags-display');
     let selectedTags = new Set();
+    let originalEventData = null; // Store original event data for comparison
 
     const tagStructure = {
         "Audience": ["public", "student", "teacher", "admin"],
@@ -112,6 +113,20 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    // Helper function to format date properly for input fields
+    function formatDateForInput(dateString) {
+        const date = new Date(dateString);
+        // Adjust for timezone offset to get local date
+        const localDate = new Date(date.getTime() - (date.getTimezoneOffset() * 60000));
+        return localDate.toISOString().split('T')[0];
+    }
+
+    // Helper function to format time properly for input fields
+    function formatTimeForInput(dateString) {
+        const date = new Date(dateString);
+        return date.toTimeString().slice(0, 5);
+    }
+
     // --- DATA FETCHING AND FORM POPULATION ---
     async function populateForm() {
         try {
@@ -120,6 +135,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 throw new Error('Could not fetch event data.');
             }
             const eventData = await response.json();
+            originalEventData = eventData; // Store for later comparison
             console.log("Event data received:", eventData);
 
             // Populate basic fields
@@ -127,17 +143,11 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('description').value = eventData.description;
             document.getElementById('priority').value = eventData.priority;
             
-            // Split datetime into date and time components
-            const startDateTime = new Date(eventData.start_time);
-            const endDateTime = new Date(eventData.end_time);
-            
-            // Format dates as YYYY-MM-DD
-            const startDate = startDateTime.toISOString().split('T')[0];
-            const endDate = endDateTime.toISOString().split('T')[0];
-            
-            // Format times as HH:MM
-            const startTime = startDateTime.toTimeString().slice(0, 5);
-            const endTime = endDateTime.toTimeString().slice(0, 5);
+            // Format dates and times properly
+            const startDate = formatDateForInput(eventData.start_time);
+            const endDate = formatDateForInput(eventData.end_time);
+            const startTime = formatTimeForInput(eventData.start_time);
+            const endTime = formatTimeForInput(eventData.end_time);
             
             // Determine if this is a multi-day event
             const isMultiDay = startDate !== endDate;
@@ -153,11 +163,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 document.getElementById('rec_end_time').value = endTime;
                 
                 // Store dates as hidden fields for submission
-                const hiddenStartDate = document.createElement('input');
-                hiddenStartDate.type = 'hidden';
-                hiddenStartDate.id = 'hidden_start_date';
+                let hiddenStartDate = document.getElementById('hidden_start_date');
+                if (!hiddenStartDate) {
+                    hiddenStartDate = document.createElement('input');
+                    hiddenStartDate.type = 'hidden';
+                    hiddenStartDate.id = 'hidden_start_date';
+                    form.appendChild(hiddenStartDate);
+                }
                 hiddenStartDate.value = startDate;
-                form.appendChild(hiddenStartDate);
                 
                 // Show recurring options
                 const recurringOptions = document.getElementById('recurringEventOptions');
@@ -165,17 +178,23 @@ document.addEventListener('DOMContentLoaded', () => {
                     recurringOptions.style.display = 'block';
                     
                     // Store the recurrence group ID and original date for the backend
-                    const hiddenGroupId = document.createElement('input');
-                    hiddenGroupId.type = 'hidden';
-                    hiddenGroupId.id = 'recurrence_group_id';
+                    let hiddenGroupId = document.getElementById('recurrence_group_id');
+                    if (!hiddenGroupId) {
+                        hiddenGroupId = document.createElement('input');
+                        hiddenGroupId.type = 'hidden';
+                        hiddenGroupId.id = 'recurrence_group_id';
+                        form.appendChild(hiddenGroupId);
+                    }
                     hiddenGroupId.value = eventData.recurrence_group_id;
-                    form.appendChild(hiddenGroupId);
                     
-                    const hiddenOrigDate = document.createElement('input');
-                    hiddenOrigDate.type = 'hidden';
-                    hiddenOrigDate.id = 'original_date';
+                    let hiddenOrigDate = document.getElementById('original_date');
+                    if (!hiddenOrigDate) {
+                        hiddenOrigDate = document.createElement('input');
+                        hiddenOrigDate.type = 'hidden';
+                        hiddenOrigDate.id = 'original_date';
+                        form.appendChild(hiddenOrigDate);
+                    }
                     hiddenOrigDate.value = startDate;
-                    form.appendChild(hiddenOrigDate);
                 }
             } else if (isMultiDay) {
                 // For multi-day events, show separate start/end date and time inputs
@@ -227,9 +246,10 @@ document.addEventListener('DOMContentLoaded', () => {
             // Recurring event - combine hidden dates with visible times
             const startDate = document.getElementById('hidden_start_date').value;
             const startTime = document.getElementById('rec_start_time').value;
+            const endTime = document.getElementById('rec_end_time').value;
             
             startDateTime = `${startDate}T${startTime}:00`;
-            endDateTime = `${startDate}T${document.getElementById('rec_end_time').value}:00`;
+            endDateTime = `${startDate}T${endTime}:00`;
         } else if (document.getElementById('multiDayInputs').style.display !== 'none') {
             // Multi-day event - combine separate start/end dates and times
             const startDate = document.getElementById('multi_start_date').value;
@@ -265,6 +285,12 @@ document.addEventListener('DOMContentLoaded', () => {
             payload.edit_scope = editScope;
             payload.recurrence_group_id = document.getElementById('recurrence_group_id').value;
             payload.original_date = document.getElementById('original_date').value;
+            
+            // For recurring events, we need to pass the original start time for comparison
+            if (originalEventData) {
+                payload.original_start_time = originalEventData.start_time;
+                payload.original_end_time = originalEventData.end_time;
+            }
         }
 
         console.log("Submitting payload:", payload);
@@ -290,60 +316,70 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // --- DELETE BUTTON LOGIC ---
-    deleteButton.addEventListener('click', async () => {
-        const recurringOptions = document.getElementById('recurringEventOptions');
-        let confirmationText = "Are you sure you want to delete this event? This action cannot be undone.";
-        
-        // If it's a recurring event, get the scope from dropdown
-        let deleteScope = 'single';
-        let originalDate = '';
-        
-        if (recurringOptions && recurringOptions.style.display !== 'none') {
-            const editScopeDropdown = document.getElementById('edit-scope-dropdown');
-            const selectedScope = editScopeDropdown.value;
+    if (deleteButton) {
+        deleteButton.addEventListener('click', async () => {
+            const recurringOptions = document.getElementById('recurringEventOptions');
+            let confirmationText = "Are you sure you want to delete this event? This action cannot be undone.";
             
-            if (selectedScope === 'all') {
-                deleteScope = 'all';
-                confirmationText = "Are you sure you want to delete ALL occurrences of this recurring event? This action cannot be undone.";
-            } else if (selectedScope === 'this') {
-                deleteScope = 'this';
-                confirmationText = "Are you sure you want to delete only this occurrence of the recurring event? This action cannot be undone.";
-                originalDate = document.getElementById('original_date')?.value || '';
-            } else if (selectedScope === 'future') {
-                deleteScope = 'future';
-                confirmationText = "Are you sure you want to delete this and all future occurrences of the recurring event? This action cannot be undone.";
-                originalDate = document.getElementById('original_date')?.value || '';
-            }
-        }
-        
-        if (confirm(confirmationText)) {
-            try {
-                let url = `/api/event/${eventId}?scope=${deleteScope}`;
-                if ((deleteScope === 'this' || deleteScope === 'future') && originalDate) {
-                    url += `&original_date=${originalDate}`;
+            // If it's a recurring event, get the scope from dropdown
+            let deleteScope = 'single';
+            let originalDate = '';
+            
+            if (recurringOptions && recurringOptions.style.display !== 'none') {
+                const editScopeDropdown = document.getElementById('edit-scope-dropdown');
+                const selectedScope = editScopeDropdown ? editScopeDropdown.value : 'this';
+                
+                if (selectedScope === 'all') {
+                    deleteScope = 'all';
+                    confirmationText = "Are you sure you want to delete ALL occurrences of this recurring event? This action cannot be undone.";
+                } else if (selectedScope === 'this') {
+                    deleteScope = 'this';
+                    confirmationText = "Are you sure you want to delete only this occurrence of the recurring event? This action cannot be undone.";
+                    originalDate = document.getElementById('original_date')?.value || '';
+                } else if (selectedScope === 'future') {
+                    deleteScope = 'future';
+                    confirmationText = "Are you sure you want to delete this and all future occurrences of the recurring event? This action cannot be undone.";
+                    originalDate = document.getElementById('original_date')?.value || '';
                 }
-                
-                console.log(`Sending DELETE request to: ${url}`);
-                
-                const response = await fetch(url, {
-                    method: 'DELETE'
-                });
-                
-                const result = await response.json();
-                console.log("Delete response:", result);
-                
-                if (response.ok) {
-                    alert(result.message);
-                    window.location.href = '/dashboard';
-                } else {
-                    throw new Error(result.error || 'Failed to delete event.');
-                }
-            } catch (error) {
-                console.error("Error deleting event:", error);
-                alert(error.message);
             }
-        }
-    });
+            
+            if (confirm(confirmationText)) {
+                try {
+                    let url = `/api/event/${eventId}?scope=${deleteScope}`;
+                    if ((deleteScope === 'this' || deleteScope === 'future') && originalDate) {
+                        url += `&original_date=${encodeURIComponent(originalDate)}`;
+                    }
+                    
+                    // For recurring events, also pass the recurrence group ID
+                    if (recurringOptions && recurringOptions.style.display !== 'none') {
+                        const groupId = document.getElementById('recurrence_group_id')?.value;
+                        if (groupId) {
+                            url += `&recurrence_group_id=${encodeURIComponent(groupId)}`;
+                        }
+                    }
+                    
+                    console.log(`Sending DELETE request to: ${url}`);
+                    
+                    const response = await fetch(url, {
+                        method: 'DELETE'
+                    });
+                    
+                    const result = await response.json();
+                    console.log("Delete response:", result);
+                    
+                    if (response.ok) {
+                        alert(result.message);
+                        window.location.href = '/dashboard';
+                    } else {
+                        throw new Error(result.error || 'Failed to delete event.');
+                    }
+                } catch (error) {
+                    console.error("Error deleting event:", error);
+                    alert(error.message);
+                }
+            }
+        });
+    }
 
     // --- INITIALISE PAGE ---
     if (userRole !== 'student') {
