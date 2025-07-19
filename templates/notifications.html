@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Notifications</title>
+  <link rel="stylesheet" href="/static/css/dashboard.css">
+</head>
+<body>
+  <div class="sidebar">
+    <a class="tab" href="/dashboard"><i class="fas fa-calendar-alt"></i> Dashboard</a>
+    <a class="tab" href="/notifications" class="active"><i class="fas fa-bell"></i> Notifications</a>
+  </div>
+
+  <div class="main-content">
+    <h1>Upcoming Event Notifications</h1>
+    {% if events %}
+      <ul class="notification-list">
+        {% for event in events %}
+          <li class="notification-item">
+            <strong>{{ event.title }}</strong><br>
+            {{ event.start_datetime }} — {{ event.description or "No description" }}
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p>No upcoming events in the next few days.</p>
+    {% endif %}
+  </div>
+</body>
+</html>
