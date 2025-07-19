@@ -12,6 +12,11 @@ import requests
 import os
 from google.oauth2 import service_account
 import google.auth.transport.requests
+from flask_mail import Mail
+from utils.email_utils import send_email
+
+
+
 
 def create_app():
     app = Flask(__name__)
@@ -20,11 +25,22 @@ def create_app():
     
     db.init_app(app)
     migrate = Migrate(app, db)
+    
+    # Mail configuration
+    mail = Mail(app)
+    app.config['MAIL_SERVER'] = 'smtp.gmail.com'
+    app.config['MAIL_PORT'] = 587
+    app.config['MAIL_USE_TLS'] = True
+    app.config['MAIL_USERNAME'] = 'your_email@gmail.com'
+    app.config['MAIL_PASSWORD'] = 'your_app_password'  # not your Gmail password
+
+
 
     with app.app_context():
         from models.event import Event
         from models.user import User
         from models.event_exceptions import EventExceptions
+        from models.notifications import Notification
 
     @app.route('/')
     def index():
@@ -703,7 +719,7 @@ def create_app():
     def notifications():
         user_id = session.get('user_id')
         if not user_id:
-            return redirect('/login')  # Or handle unauthorized access another way
+            return redirect(url_for('login'))
 
         now = datetime.now()
         three_days_later = now + timedelta(days=3)
@@ -715,6 +731,58 @@ def create_app():
         ).order_by(Event.start_time.asc()).all()
 
         return render_template('notifications.html', events=events)
+    
+    @app.cli.command("send_notifications")
+    def send_notifications():
+        with app.app_context():
+            PRIORITY_RULES = {
+                2: [7, 2, 1],  # High
+                1: [2, 1],     # Medium
+                0: [1]         # Low
+            }
+            now = datetime.now()
+
+            for priority, days_list in PRIORITY_RULES.items():
+                for days_before in days_list:
+                    target_date = now + timedelta(days=days_before)
+
+                    events = Event.query.filter(
+                        Event.priority == priority,
+                        db.func.date(Event.start_time) == target_date.date()
+                    ).all()
+
+                    for event in events:
+                        user = User.query.get(event.creator_id)  # or adjust for participants
+
+                        already_sent = Notification.query.filter_by(
+                            user_id=user.id,
+                            event_id=event.id,
+                            days_before=days_before,
+                            type="email"
+                        ).first()
+
+                        if already_sent:
+                            continue  # Skip if already sent
+
+                        # Compose and send email
+                        subject = f"Upcoming Event: {event.title}"
+                        body = f"Reminder: '{event.title}' is happening in {days_before} day(s).\nDetails: {event.description or 'No description'}"
+
+                        send_email(user.email, subject, body)
+
+                        # Log notification
+                        notif = Notification(
+                            user_id=user.id,
+                            event_id=event.id,
+                            days_before=days_before,
+                            type="email",
+                            message=body
+                        )
+                        db.session.add(notif)
+
+            db.session.commit()
+            print("✅ Notifications sent.")
+
 
 
     return app
