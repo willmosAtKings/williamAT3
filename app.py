@@ -634,7 +634,7 @@ def create_app():
         # Call the AI API (example using OpenAI)
         api_key = os.getenv('OPENAI_API_KEY')
         headers = {
-            'Authorisation': f'Bearer {api_key}',
+            'Authorization': f'Bearer {api_key}',
             'Content-Type': 'application/json'
         }
         response = requests.post(
