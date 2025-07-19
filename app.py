@@ -39,6 +39,7 @@ def create_app():
 
 
     with app.app_context():
+        db.create_all()
         from models.event import Event
         from models.user import User
         from models.event_exceptions import EventExceptions
@@ -780,5 +781,8 @@ from scheduler import start_scheduler
 
 if __name__ == "__main__":
     app = create_app()
-    start_scheduler(app)
+    if os.environ.get("WERKZEUG_RUN_MAIN") == "true":
+        start_scheduler(app)
+        print("✅ Scheduler started")
+
     app.run(host='127.0.0.1', port=5001, debug=True)

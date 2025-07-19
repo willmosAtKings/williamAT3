@@ -5,6 +5,10 @@ def start_scheduler(app):
     scheduler = BackgroundScheduler()
 
     # Schedule the job every 30 seconds (for testing; normally use cron at 7am)
+
+# trigger='cron',
+# hour=7,
+# minute=0
     scheduler.add_job(
         func=lambda: send_event_reminders(app),
         trigger='interval',
