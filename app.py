@@ -10,7 +10,8 @@ from flask_migrate import Migrate
 import uuid
 import requests
 import os
-
+from google.oauth2 import service_account
+import google.auth.transport.requests
 
 def create_app():
     app = Flask(__name__)
@@ -50,7 +51,6 @@ def create_app():
 
         return render_template("dashboard.html", user_email=user.email, user_id=user.id, user_role=user.role)
 
- 
     @app.route('/login', methods=['POST', 'GET'])
     def login():
         from models.user import User
@@ -614,6 +614,7 @@ def create_app():
 
         return jsonify({'message': 'Your tags have been updated successfully!'}), 200
 
+
     @app.route('/api/summarise', methods=['POST'])
     def summarise_event():
         data = request.json
@@ -622,36 +623,51 @@ def create_app():
         end_time = data.get('end_time', '')
         title = data.get('title', '')
 
-        # Construct the prompt for the AI
-        prompt = f"Summarise the following event:\nTitle: {title}\nDescription: {event_description}\nStart Time: {start_time}\nEnd Time: {end_time}"
+        # Construct the content for the Gemini API (must be a list of parts)
+        contents = [{
+            "parts": [{
+                "text": f"Summarise the following event:\nTitle: {title}\nDescription: {event_description}\nStart Time: {start_time}\nEnd Time: {end_time}"
+            }]
+        }]
 
-        # Retrieve the API key from the environment variable
-        api_key = os.getenv('GEMINI_API_KEY')
-        if not api_key:
-            return jsonify({'error': 'API key not found'}), 401
+        SERVICE_ACCOUNT_FILE = 'secrets/gemkey.json'
+        SCOPES = ['https://www.googleapis.com/auth/generative-language']
 
-        # Set up the headers with the API key
-        headers = {
-            'Authorization': f'Bearer {api_key}',
-            'Content-Type': 'application/json'
-        }
+        try:
+            # Get bearer token from service account
+            credentials = service_account.Credentials.from_service_account_file(
+                SERVICE_ACCOUNT_FILE, scopes=SCOPES)
+            auth_req = google.auth.transport.requests.Request()
+            credentials.refresh(auth_req)
+            access_token = credentials.token
 
-        # Make the request to the Gemini API
-        response = requests.post(
-            'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent',  # Replace with the correct Gemini API endpoint
-            headers=headers,
-            json={
-                'prompt': prompt,
-                'max_tokens': 100
+            headers = {
+                'Authorization': f'Bearer {access_token}',
+                'Content-Type': 'application/json'
             }
-        )
 
-        if response.status_code == 200:
-            summary = response.json().get('choices', [{}])[0].get('text', '').strip()  # Adjust based on Gemini's response structure
-            return jsonify({'summary': summary})
-        else:
-            return jsonify({'error': 'Failed to get summary'}), response.status_code
+            payload = {
+                "model": "models/gemini-1.5-flash",  # or gemini-1.5-pro
+                "contents": contents
+            }
 
+            response = requests.post(
+                "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent",
+                headers=headers,
+                json=payload
+            )
+
+            if response.status_code == 200:
+                candidates = response.json().get("candidates", [])
+                summary = candidates[0]["content"]["parts"][0]["text"] if candidates else "No summary available."
+                return jsonify({'summary': summary})
+            else:
+                print(f"Error: {response.status_code}, Response: {response.text}")
+                return jsonify({'error': 'Failed to get summary'}), response.status_code
+
+        except Exception as e:
+            print(f"Exception occurred: {e}")
+            return jsonify({'error': 'Internal server error'}), 500
 
 
     return app
