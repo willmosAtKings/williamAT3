@@ -1,7 +1,11 @@
-from flask_mail import Message
-from app import mail, app  # import your mail instance and app
+from flask_mail import Mail, Message
 
-def send_email(to, subject, body):
+mail = Mail()  # Initialize Mail without an app
+
+def init_mail(app):
+    mail.init_app(app)  # Initialize Mail with the app context
+
+def send_email(app, to, subject, body):
     with app.app_context():
         msg = Message(subject=subject, recipients=[to], body=body)
         mail.send(msg)

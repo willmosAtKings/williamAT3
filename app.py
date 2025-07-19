@@ -12,8 +12,9 @@ import requests
 import os
 from google.oauth2 import service_account
 import google.auth.transport.requests
-from flask_mail import Mail
-from utils.email_utils import send_email
+from flask_mail import Message
+from utils.email_utils import send_email, init_mail
+
 
 
 
@@ -27,13 +28,13 @@ def create_app():
     migrate = Migrate(app, db)
     
     # Mail configuration
-    mail = Mail(app)
-    app.config['MAIL_SERVER'] = 'smtp.gmail.com'
-    app.config['MAIL_PORT'] = 587
-    app.config['MAIL_USE_TLS'] = True
-    app.config['MAIL_USERNAME'] = 'your_email@gmail.com'
-    app.config['MAIL_PASSWORD'] = 'your_app_password'  # not your Gmail password
+    app.config['MAIL_SERVER'] = os.getenv('MAIL_SERVER')
+    app.config['MAIL_PORT'] = int(os.getenv('MAIL_PORT', 587))  # Default to 587 if not set
+    app.config['MAIL_USE_TLS'] = os.getenv('MAIL_USE_TLS', 'True') == 'True'
+    app.config['MAIL_USERNAME'] = os.getenv('MAIL_USERNAME')
+    app.config['MAIL_PASSWORD'] = os.getenv('MAIL_PASSWORD')
 
+    init_mail(app)
 
 
     with app.app_context():
@@ -768,7 +769,7 @@ def create_app():
                         subject = f"Upcoming Event: {event.title}"
                         body = f"Reminder: '{event.title}' is happening in {days_before} day(s).\nDetails: {event.description or 'No description'}"
 
-                        send_email(user.email, subject, body)
+                        send_email(app, user.email, subject, body)
 
                         # Log notification
                         notif = Notification(
@@ -782,6 +783,14 @@ def create_app():
 
             db.session.commit()
             print("✅ Notifications sent.")
+
+    @app.route('/send-test-email')
+    def send_test_email():
+        try:
+            send_email(app, "yatidhiman@gmail.com", "Test Email", "This is a test email from your Flask application.")
+            return "Test email sent successfully!"
+        except Exception as e:
+            return f"Failed to send test email: {e}"
 
 
 
