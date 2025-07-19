@@ -109,7 +109,6 @@ def create_app():
         response.set_cookie('session_token', new_user.session_token, httponly=True, secure=False, samesite='Strict', max_age=7200)
         return response
 
-
     @app.route('/event/create', methods=['GET', 'POST'])
     def create_event():
         user_role = session.get('user_role')
@@ -427,7 +426,6 @@ def create_app():
                 db.session.commit()
                 return jsonify({'message': 'Event deleted successfully.'})
 
-
     @app.route('/api/events')
     def get_events():
         from models.event import Event
@@ -552,6 +550,63 @@ def create_app():
                 })
         
         return jsonify(final_events)
+
+    @app.route('/profile/info')
+    def profile_info():
+        if 'user_id' not in session:
+            return redirect(url_for('login'))
+        
+        from models.user import User
+        user = db.session.get(User, session['user_id'])
+        
+        if not user:
+            session.clear()
+            return redirect(url_for('login'))
+        
+        return render_template('profile/info.html', user=user)
+
+    
+    @app.route('/profile/account')
+    def profile_account():
+        return render_template('profile/account.html')
+
+    @app.route('/profile/privacy')
+    def profile_privacy():
+        return render_template('profile/privacy.html')
+    
+    @app.route('/profile/preferences')
+    def preferences():
+        from models.user import User
+        user_id = session.get('user_id')
+        if not user_id:
+            return redirect(url_for('login'))
+        
+        user = db.session.get(User, user_id)
+        # Pass the user's saved tags to the template
+        return render_template('profile/preferences.html', current_tags=user.profile_tags or '')
+
+    @app.route('/api/profile/tags', methods=['POST'])
+    def update_profile_tags():
+        from models.user import User
+        
+        if 'user_id' not in session:
+            return jsonify({'error': 'Unauthorized'}), 401
+
+        user = db.session.get(User, session['user_id'])
+        if not user:
+            return jsonify({'error': 'User not found'}), 401
+
+        data = request.get_json()
+        if data is None:
+            return jsonify({'error': 'Invalid JSON'}), 400
+            
+        new_tags = data.get('tags', '')
+        user.profile_tags = new_tags
+        db.session.commit()
+
+        return jsonify({'message': 'Your tags have been updated successfully!'}), 200
+
+
 
 
     return app
