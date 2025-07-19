@@ -8,6 +8,9 @@ from dateutil.relativedelta import relativedelta
 from sqlalchemy import or_, and_
 from flask_migrate import Migrate
 import uuid
+import requests
+import os
+
 
 def create_app():
     app = Flask(__name__)
@@ -26,17 +29,28 @@ def create_app():
     @app.route('/')
     def index():
         return render_template('login.html')
-
+    
     @app.route("/dashboard", methods=["GET", "POST"])
     def dashboard():
         if 'user_id' not in session:
+            if request.method == 'POST':
+                return jsonify({'redirectTo': url_for('login')})
             return redirect(url_for('login'))
+
         from models.user import User
         user = db.session.get(User, session['user_id'])
+
         if not user:
             session.clear()
+            if request.method == 'POST':
+                return jsonify({'redirectTo': url_for('login')})
             return redirect(url_for('login'))
+
+        if request.method == 'POST':
+            return jsonify({'redirectTo': url_for('dashboard')})  # Just returns URL
+
         return render_template("dashboard.html", user_email=user.email, user_id=user.id, user_role=user.role)
+
  
     @app.route('/login', methods=['POST', 'GET'])
     def login():
@@ -113,7 +127,7 @@ def create_app():
     def create_event():
         user_role = session.get('user_role')
         if user_role not in ['student', 'teacher', 'admin']:
-            return jsonify({'error': 'Unauthorized'}), 403
+            return jsonify({'error': 'Unauthorised'}), 403
 
         if request.method == 'GET':
             return render_template('create_event.html', user_role=user_role)
@@ -240,7 +254,7 @@ def create_app():
         from models.event_exceptions import EventExceptions
         
         if 'user_id' not in session:
-            return jsonify({'error': 'Unauthorized'}), 401
+            return jsonify({'error': 'Unauthorised'}), 401
             
         user = db.session.get(User, session['user_id'])
         event = db.session.get(Event, event_id)
@@ -433,7 +447,7 @@ def create_app():
         from models.event_exceptions import EventExceptions
         
         if 'user_id' not in session:
-            return jsonify({'error': 'Unauthorized'}), 401
+            return jsonify({'error': 'Unauthorised'}), 401
         
         user = db.session.get(User, session['user_id'])
         if not user:
@@ -590,7 +604,7 @@ def create_app():
         from models.user import User
         
         if 'user_id' not in session:
-            return jsonify({'error': 'Unauthorized'}), 401
+            return jsonify({'error': 'Unauthorised'}), 401
 
         user = db.session.get(User, session['user_id'])
         if not user:
@@ -606,7 +620,37 @@ def create_app():
 
         return jsonify({'message': 'Your tags have been updated successfully!'}), 200
 
+    @app.route('/api/summarise', methods=['POST'])
+    def summarise_event():
+        data = request.json
+        event_description = data.get('description', '')
+        start_time = data.get('start_time', '')
+        end_time = data.get('end_time', '')
+        title = data.get('title', '')
 
+        # Construct the prompt for the AI
+        prompt = f"Summarise the following event:\nTitle: {title}\nDescription: {event_description}\nStart Time: {start_time}\nEnd Time: {end_time}"
+
+        # Call the AI API (example using OpenAI)
+        api_key = os.getenv('OPENAI_API_KEY')
+        headers = {
+            'Authorisation': f'Bearer {api_key}',
+            'Content-Type': 'application/json'
+        }
+        response = requests.post(
+            'https://api.openai.com/v1/engines/davinci-codex/completions',
+            headers=headers,
+            json={
+                'prompt': prompt,
+                'max_tokens': 100
+            }
+        )
+
+        if response.status_code == 200:
+            summary = response.json().get('choices', [{}])[0].get('text', '').strip()
+            return jsonify({'summary': summary})
+        else:
+            return jsonify({'error': 'Failed to get summary'}), response.status_code
 
 
     return app
