@@ -1,29 +1,36 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>Notifications</title>
-  <link rel="stylesheet" href="/static/css/dashboard.css">
+  <link rel="stylesheet" href="/static/css/dashboard.css" />
+  <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
 </head>
 <body>
   <div class="sidebar">
     <a class="tab" href="/dashboard"><i class="fas fa-calendar-alt"></i> Dashboard</a>
-    <a class="tab" href="/notifications" class="active"><i class="fas fa-bell"></i> Notifications</a>
+    <a class="tab active" href="/notifications"><i class="fas fa-bell"></i> Notifications</a>
   </div>
 
   <div class="main-content">
-    <h1>Upcoming Event Notifications</h1>
+    <h1 style="padding: 1rem;">Upcoming Event Notifications</h1>
+
     {% if events %}
-      <ul class="notification-list">
+      <ul style="list-style: none; padding: 0 1rem;">
         {% for event in events %}
-          <li class="notification-item">
-            <strong>{{ event.title }}</strong><br>
-            {{ event.start_datetime }} — {{ event.description or "No description" }}
+          <li class="event-item priority-{{ event.priority }}">
+            <div class="event-title">{{ event.title }}</div>
+            <div class="event-time" style="font-size: 0.85rem; color: #666;">
+              {{ event.start_time.strftime('%A, %d %B %Y %I:%M %p') }}
+            </div>
+            <div style="margin-top: 4px; font-size: 0.9rem; color: #333;">
+              {{ event.description or "No description" }}
+            </div>
           </li>
         {% endfor %}
       </ul>
     {% else %}
-      <p>No upcoming events in the next few days.</p>
+      <p style="padding: 1rem; color: #666;">No upcoming events in the next few days.</p>
     {% endif %}
   </div>
 </body>

@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, make_response, jsonify, session, flash, json, query_db
+from flask import Flask, render_template, request, redirect, url_for, make_response, jsonify, session, flash, json
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash
 import secrets
@@ -702,16 +702,17 @@ def create_app():
     @app.route('/notifications', methods=['GET'])
     def notifications():
         user_id = session.get('user_id')
+        if not user_id:
+            return redirect('/login')  # Or handle unauthorized access another way
 
-        # Fetch upcoming events within 3 days for this user (you can change the logic)
-        today = datetime.now()
-        in_three_days = today + timedelta(days=3)
+        now = datetime.now()
+        three_days_later = now + timedelta(days=3)
 
-        events = query_db("""
-            SELECT * FROM events 
-            WHERE user_id = ? AND start_datetime BETWEEN ? AND ?
-            ORDER BY start_datetime ASC
-        """, [user_id, today, in_three_days])
+        events = Event.query.filter(
+            Event.creator_id == user_id,
+            Event.start_time >= now,
+            Event.start_time <= three_days_later
+        ).order_by(Event.start_time.asc()).all()
 
         return render_template('notifications.html', events=events)
 
