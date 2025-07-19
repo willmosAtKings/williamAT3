@@ -487,3 +487,10 @@ document.addEventListener('DOMContentLoaded', function() {
   updateDateDisplay();
   loadEventsForCurrentView();
 });
+
+function closeSummaryModal() {
+  const summaryModal = document.getElementById('summaryModal');
+  if (summaryModal) {
+    summaryModal.style.display = 'none';
+  }
+}
