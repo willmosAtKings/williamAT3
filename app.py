@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, make_response, jsonify, session, flash, json
+from flask import Flask, render_template, request, redirect, url_for, make_response, jsonify, session, flash, json, query_db
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash
 import secrets
@@ -697,6 +697,24 @@ def create_app():
         except Exception as e:
             print(f"Exception occurred: {e}")
             return jsonify({'error': 'Internal server error'}), 500
+        
+
+    @app.route('/notifications', methods=['GET'])
+    def notifications():
+        user_id = session.get('user_id')
+
+        # Fetch upcoming events within 3 days for this user (you can change the logic)
+        today = datetime.now()
+        in_three_days = today + timedelta(days=3)
+
+        events = query_db("""
+            SELECT * FROM events 
+            WHERE user_id = ? AND start_datetime BETWEEN ? AND ?
+            ORDER BY start_datetime ASC
+        """, [user_id, today, in_three_days])
+
+        return render_template('notifications.html', events=events)
+
 
     return app
 
