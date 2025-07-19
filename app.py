@@ -23,9 +23,8 @@ def create_app():
     with app.app_context():
         from models.event import Event
         from models.user import User
-        from models.event_exceptions import EventExceptions # Import the new model
+        from models.event_exceptions import EventExceptions
 
-    # ... (other routes are correct and remain the same) ...
     @app.route('/')
     def index():
         return render_template('login.html')
@@ -47,7 +46,7 @@ def create_app():
             return redirect(url_for('login'))
 
         if request.method == 'POST':
-            return jsonify({'redirectTo': url_for('dashboard')})  # Just returns URL
+            return jsonify({'redirectTo': url_for('dashboard')})
 
         return render_template("dashboard.html", user_email=user.email, user_id=user.id, user_role=user.role)
 
@@ -98,14 +97,10 @@ def create_app():
             data = request.get_json()
             email = data.get('email')
             password = data.get('password')
-            # Remove username reference
-            # username = data.get('username', email)  # Remove this line
             role = data.get('role')
         else:
             email = request.form.get('email')
             password = request.form.get('password')
-            # Remove username reference
-            # username = request.form.get('username', email)  # Remove this line
             role = request.form.get('role')
         if not email or not password or not role:
             return jsonify({'error': 'Missing fields'}), 400
@@ -114,7 +109,6 @@ def create_app():
         if User.query.filter_by(email=email).first():
             return jsonify({'error': 'Email already exists'}), 409
         
-        # Update the User creation - remove username parameter
         new_user = User(email=email, password=password, role=role)
         
         db.session.add(new_user)
