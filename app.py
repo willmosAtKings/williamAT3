@@ -733,66 +733,6 @@ def create_app():
         ).order_by(Event.start_time.asc()).all()
 
         return render_template('notifications.html', events=events)
-    
-    @app.cli.command("send_notifications")
-    def send_notifications():
-        with app.app_context():
-            PRIORITY_RULES = {
-                2: [7, 2, 1],  # High
-                1: [2, 1],     # Medium
-                0: [1]         # Low
-            }
-            now = datetime.now()
-
-            for priority, days_list in PRIORITY_RULES.items():
-                for days_before in days_list:
-                    target_date = now + timedelta(days=days_before)
-
-                    events = Event.query.filter(
-                        Event.priority == priority,
-                        db.func.date(Event.start_time) == target_date.date()
-                    ).all()
-
-                    for event in events:
-                        user = User.query.get(event.creator_id)  # or adjust for participants
-
-                        already_sent = Notification.query.filter_by(
-                            user_id=user.id,
-                            event_id=event.id,
-                            days_before=days_before,
-                            type="email"
-                        ).first()
-
-                        if already_sent:
-                            continue  # Skip if already sent
-
-                        # Compose and send email
-                        subject = f"Upcoming Event: {event.title}"
-                        body = f"Reminder: '{event.title}' is happening in {days_before} day(s).\nDetails: {event.description or 'No description'}"
-
-                        send_email(app, user.email, subject, body)
-
-                        # Log notification
-                        notif = Notification(
-                            user_id=user.id,
-                            event_id=event.id,
-                            days_before=days_before,
-                            type="email",
-                            message=body
-                        )
-                        db.session.add(notif)
-
-            db.session.commit()
-            print("✅ Notifications sent.")
-
-    @app.route('/send-test-email')
-    def send_test_email():
-        try:
-            send_email(app, "yatidhiman@gmail.com", "Test Email", "This is a test email from your Flask application.")
-            return "Test email sent successfully!"
-        except Exception as e:
-            return f"Failed to send test email: {e}"
-
 
 
     return app
