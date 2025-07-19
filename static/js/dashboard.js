@@ -392,10 +392,37 @@ function formatRecurrence(recurrence) {
   return pattern;
 }
 
-function showEventDetails(event) {
-  const currentUserId = parseInt(document.body.dataset.userId, 10);
-  const currentUserRole = document.body.dataset.userRole;
+document.getElementById('summariseBtn').addEventListener('click', async () => {
+  // const eventId = /* get the event ID from your context */; // lowaubdouawbduoabduoabdoaw
+  const response = await fetch(`/api/event/${eventId}`);
+  const eventData = await response.json();
 
+  const summaryResponse = await fetch('/api/summarize', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(eventData)
+  });
+
+  if (summaryResponse.ok) {
+    const summaryData = await summaryResponse.json();
+    alert(`Summary: ${summaryData.summary}`);
+  } else {
+    alert('Failed to get summary');
+  }
+});
+
+
+
+function showEventDetails(event) {
+  const eventId = event.id; // Get the event ID from the event object
+
+  // Set the event ID as a data attribute on the "Summarise" button
+  const summariseBtn = document.getElementById('summariseBtn');
+  summariseBtn.setAttribute('data-event-id', eventId);
+
+  // Populate other event details as needed
   document.getElementById('eventTitle').textContent = event.title;
   const priorityBadge = document.getElementById('eventPriority');
   priorityBadge.textContent = ['Low', 'Medium', 'High'][event.priority] || 'Low';
@@ -405,7 +432,7 @@ function showEventDetails(event) {
   document.getElementById('eventTime').textContent = `${formatTime(event.start_time)} - ${formatTime(event.end_time)}`;
   
   const recurrenceInfo = document.getElementById('eventRecurrenceInfo');
-  if (event.is_recurring) { // Check the new is_recurring flag
+  if (event.is_recurring) {
     recurrenceInfo.style.display = 'flex';
     document.getElementById('eventRecurrence').textContent = `This is a recurring event.`;
   } else {
