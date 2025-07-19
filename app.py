@@ -625,14 +625,20 @@ def create_app():
         # Construct the prompt for the AI
         prompt = f"Summarise the following event:\nTitle: {title}\nDescription: {event_description}\nStart Time: {start_time}\nEnd Time: {end_time}"
 
-        # Call the AI API (example using OpenAI)
-        api_key = os.getenv('OPENAI_API_KEY')
+        # Retrieve the API key from the environment variable
+        api_key = os.getenv('GEMINI_API_KEY')
+        if not api_key:
+            return jsonify({'error': 'API key not found'}), 401
+
+        # Set up the headers with the API key
         headers = {
             'Authorization': f'Bearer {api_key}',
             'Content-Type': 'application/json'
         }
+
+        # Make the request to the Gemini API
         response = requests.post(
-            'https://api.openai.com/v1/engines/davinci-codex/completions',
+            'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent',  # Replace with the correct Gemini API endpoint
             headers=headers,
             json={
                 'prompt': prompt,
@@ -641,10 +647,11 @@ def create_app():
         )
 
         if response.status_code == 200:
-            summary = response.json().get('choices', [{}])[0].get('text', '').strip()
+            summary = response.json().get('choices', [{}])[0].get('text', '').strip()  # Adjust based on Gemini's response structure
             return jsonify({'summary': summary})
         else:
             return jsonify({'error': 'Failed to get summary'}), response.status_code
+
 
 
     return app
