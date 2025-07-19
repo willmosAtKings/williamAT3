@@ -416,7 +416,8 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!summaryResponse.ok) throw new Error('Failed to get summary');
 
         const summaryData = await summaryResponse.json();
-        summaryText.textContent = summaryData.summary || 'No summary available.';
+        summaryText.innerHTML = marked.parse(summaryData.summary || 'No summary available.');
+
       } catch (error) {
         summaryText.textContent = 'Error loading summary. Please try again.';
         console.error('Error:', error);

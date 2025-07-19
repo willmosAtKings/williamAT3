@@ -623,12 +623,37 @@ def create_app():
         end_time = data.get('end_time', '')
         title = data.get('title', '')
 
-        # Construct the content for the Gemini API (must be a list of parts)
-        contents = [{
-            "parts": [{
-                "text": f"Summarise the following event:\nTitle: {title}\nDescription: {event_description}\nStart Time: {start_time}\nEnd Time: {end_time}"
-            }]
-        }]
+        # Extract "items to bring" if mentioned (basic heuristic)
+        items_to_bring = []
+        description_lines = event_description.splitlines()
+        for line in description_lines:
+            if 'bring' in line.lower():
+                parts = line.lower().split('bring', 1)[1].strip()
+                items_to_bring = [item.strip() for item in parts.split(',') if item.strip()]
+                break
+
+        prompt_text = f"""
+        Please summarise the following event, formatting your response using markdown. 
+        Use bold headings for the Title and Time and Date sections. 
+        List the items to bring as bullet points under an 'Items to bring' heading.
+
+        **Title:** {title}
+
+        **Time and Date:**  
+        Start: {start_time}  
+        End: {end_time}
+
+        **Description:**  
+        {event_description}
+
+        """
+
+        if items_to_bring:
+            prompt_text += "**Items to bring:**\n"
+            for item in items_to_bring:
+                prompt_text += f"- {item}\n"
+        else:
+            prompt_text += "**Items to bring:** None specified\n"
 
         SERVICE_ACCOUNT_FILE = 'secrets/gemkey.json'
         SCOPES = ['https://www.googleapis.com/auth/generative-language']
@@ -648,7 +673,11 @@ def create_app():
 
             payload = {
                 "model": "models/gemini-1.5-flash",  # or gemini-1.5-pro
-                "contents": contents
+                "contents": [{
+                    "parts": [{
+                        "text": prompt_text
+                    }]
+                }]
             }
 
             response = requests.post(
@@ -668,7 +697,6 @@ def create_app():
         except Exception as e:
             print(f"Exception occurred: {e}")
             return jsonify({'error': 'Internal server error'}), 500
-
 
     return app
 
