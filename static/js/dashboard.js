@@ -393,11 +393,13 @@ function formatRecurrence(recurrence) {
 }
 
 document.getElementById('summariseBtn').addEventListener('click', async () => {
-  // const eventId = /* get the event ID from your context */; // lowaubdouawbduoabduoabdoaw
+  // Retrieve the event ID from the data attribute
+  const eventId = document.getElementById('summariseBtn').getAttribute('data-event-id');
+
   const response = await fetch(`/api/event/${eventId}`);
   const eventData = await response.json();
 
-  const summaryResponse = await fetch('/api/summarize', {
+  const summaryResponse = await fetch('/api/summarise', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json'
@@ -413,9 +415,11 @@ document.getElementById('summariseBtn').addEventListener('click', async () => {
   }
 });
 
-
-
 function showEventDetails(event) {
+  // Retrieve user role and ID from the body data attributes
+  const currentUserRole = document.body.getAttribute('data-user-role');
+  const currentUserId = parseInt(document.body.getAttribute('data-user-id'), 10);
+
   const eventId = event.id; // Get the event ID from the event object
 
   // Set the event ID as a data attribute on the "Summarise" button
