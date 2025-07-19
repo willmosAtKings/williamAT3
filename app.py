@@ -452,6 +452,42 @@ def create_app():
                 db.session.commit()
                 return jsonify({'message': 'Event deleted successfully.'})
 
+    @app.route('/api/event/<int:event_id>/toggle-notifications', methods=['POST'])
+    def toggle_event_notifications(event_id):
+        from models.event import Event
+        from models.user import User
+
+        if 'user_id' not in session:
+            return jsonify({'error': 'Unauthorized'}), 401
+
+        user = db.session.get(User, session['user_id'])
+        event = db.session.get(Event, event_id)
+
+        if not event:
+            return jsonify({'error': 'Event not found'}), 404
+
+        # Check permissions (same logic as event editing)
+        can_modify = False
+        if user.role == 'admin':
+            can_modify = True
+        elif user.role == 'teacher' and event.creator.role != 'student':
+            can_modify = True
+        elif user.role == 'student' and event.creator_id == user.id:
+            can_modify = True
+
+        if not can_modify:
+            return jsonify({'error': 'Forbidden'}), 403
+
+        # Toggle the notifications_silenced flag
+        event.notifications_silenced = not event.notifications_silenced
+        db.session.commit()
+
+        status = "silenced" if event.notifications_silenced else "enabled"
+        return jsonify({
+            'message': f'Notifications {status} for this event',
+            'notifications_silenced': event.notifications_silenced
+        })
+
     @app.route('/api/events')
     def get_events():
         from models.event import Event
@@ -545,7 +581,8 @@ def create_app():
                             'creator_role': event.creator.role,
                             'is_recurring': True,
                             'recurrence_group_id': event.recurrence_group_id,
-                            'is_exception': True
+                            'is_exception': True,
+                            'notifications_silenced': event.notifications_silenced
                         })
                 else:
                     final_events.append({
@@ -559,7 +596,8 @@ def create_app():
                         'creator_id': event.creator_id,
                         'creator_role': event.creator.role,
                         'is_recurring': True,
-                        'recurrence_group_id': event.recurrence_group_id
+                        'recurrence_group_id': event.recurrence_group_id,
+                        'notifications_silenced': event.notifications_silenced
                     })
             else:
                 final_events.append({
@@ -572,7 +610,8 @@ def create_app():
                     'end_time': event.end_time.isoformat(),
                     'creator_id': event.creator_id,
                     'creator_role': event.creator.role,
-                    'is_recurring': False
+                    'is_recurring': False,
+                    'notifications_silenced': event.notifications_silenced
                 })
         
         return jsonify(final_events)

@@ -8,9 +8,11 @@ from flask import current_app
 
 # Define Notification model here, so it's available inside this file
 class Notification(db.Model):
+    __tablename__ = 'notifications'
+
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    event_id = db.Column(db.Integer, db.ForeignKey('event.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    event_id = db.Column(db.Integer, db.ForeignKey('events.id'), nullable=False)
     days_before = db.Column(db.Integer, nullable=False)
     type = db.Column(db.String(50))  # e.g., 'email'
     message = db.Column(db.Text)
@@ -30,10 +32,11 @@ def send_event_reminders(app):
             for days_before in days_list:
                 target_date = now + timedelta(days=days_before)
 
-                # Find matching events
+                # Find matching events (excluding silenced ones)
                 matching_events = Event.query.filter(
                     Event.priority == priority,
-                    db.func.date(Event.start_time) == target_date.date()
+                    db.func.date(Event.start_time) == target_date.date(),
+                    Event.notifications_silenced == False  # Skip silenced events
                 ).all()
 
                 for event in matching_events:

@@ -17,5 +17,8 @@ class Event(db.Model):
     is_recurring = db.Column(db.Boolean, default=False, nullable=False)
     recurrence_group_id = db.Column(db.String(36), nullable=True, index=True)
 
+    # Notification silencing feature
+    notifications_silenced = db.Column(db.Boolean, default=False, nullable=False)
+
     creator_id = db.Column(db.Integer, db.ForeignKey('users.id'))
 

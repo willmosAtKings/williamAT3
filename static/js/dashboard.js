@@ -482,6 +482,54 @@ document.addEventListener('DOMContentLoaded', function() {
     } else {
       editButton.style.display = 'none';
     }
+
+    // Set up notification toggle
+    const notificationToggle = document.getElementById('notificationToggle');
+    const notificationToggleText = document.getElementById('notificationToggleText');
+    const notificationControl = document.querySelector('.event-notifications-control');
+
+    // Show/hide notification control based on edit permissions
+    if (canEdit) {
+      notificationControl.style.display = 'flex';
+
+      // Set initial state
+      const isNotificationsSilenced = event.notifications_silenced || false;
+      notificationToggle.checked = !isNotificationsSilenced;
+      notificationToggleText.textContent = isNotificationsSilenced ? 'Notifications silenced' : 'Notifications enabled';
+
+      // Handle toggle change
+      notificationToggle.onchange = async () => {
+        try {
+          const response = await fetch(`/api/event/${event.id}/toggle-notifications`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            }
+          });
+
+          const result = await response.json();
+
+          if (response.ok) {
+            // Update the text based on the new state
+            notificationToggleText.textContent = result.notifications_silenced ? 'Notifications silenced' : 'Notifications enabled';
+
+            // Update the event object for consistency
+            event.notifications_silenced = result.notifications_silenced;
+          } else {
+            // Revert the toggle if the request failed
+            notificationToggle.checked = !notificationToggle.checked;
+            alert('Failed to update notification settings: ' + (result.error || 'Unknown error'));
+          }
+        } catch (error) {
+          // Revert the toggle if the request failed
+          notificationToggle.checked = !notificationToggle.checked;
+          alert('Failed to update notification settings: ' + error.message);
+        }
+      };
+    } else {
+      notificationControl.style.display = 'none';
+    }
+
     eventModal.style.display = 'block';
   }
 
