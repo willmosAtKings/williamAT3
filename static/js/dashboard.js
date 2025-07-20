@@ -1,5 +1,24 @@
 /*===== TAB SWITCHING FUNCTIONALITY =====*/
 
+function toggleSchedulePanel() {
+  const panel = document.getElementById('schedulePanel');
+  const list = document.getElementById('notifications-list');
+
+  panel.classList.toggle('hidden');
+
+  // Only fetch events if the panel is now visible
+  if (!panel.classList.contains('hidden')) {
+    list.innerHTML = `
+      <div class="loading-spinner">
+        <i class="fas fa-spinner fa-spin"></i>
+        <span>Loading events...</span>
+      </div>
+    `;
+    fetchUpcomingEvents();
+  }
+}
+
+
 function switchTab(tabName) {
   // Remove active class from all tabs and content
   document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
@@ -25,7 +44,7 @@ function switchTab(tabName) {
 
 /*===== NOTIFICATIONS FUNCTIONALITY =====*/
 
-async function loadNotifications() {
+async function loadSchedule() {
   const notificationsList = document.getElementById('notifications-list');
 
   try {
@@ -63,9 +82,15 @@ async function loadNotifications() {
   }
 }
 
+// Optional: function to handle clicking a notification (navigate to event page or open modal)
+function handleNotificationClick(eventId, title) {
+  window.location.href = `/event/${eventId}`;
+  // Or trigger modal logic if you have one
+}
+
 function handleNotificationClick(eventId, eventTitle) {
-  // Switch to dashboard tab
-  switchTab('dashboard');
+  // If you still want to ensure the calendar/dashboard is visible,
+  // you can put any code here to show the calendar view if needed.
 
   // Find and open the event modal for this event using the event ID
   setTimeout(() => {
@@ -86,6 +111,8 @@ function handleNotificationClick(eventId, eventTitle) {
     }
   }, 100);
 }
+
+
 
 document.addEventListener('DOMContentLoaded', function() {
   // Handle Create Event button click - navigate to create event page
@@ -632,3 +659,16 @@ function closeSummaryModal() {
     summaryModal.style.display = 'none';
   }
 }
+
+
+  
+const scheduleBtn = document.getElementById('scheduleBtn');
+const schedulePopout = document.getElementById('schedulePopout');
+const mainContent = document.querySelector('.main-content');
+const navbar = document.querySelector('.navbar');
+
+scheduleBtn.addEventListener('click', () => {
+  schedulePopout.classList.toggle('active');
+  mainContent.classList.toggle('shifted');
+  navbar.classList.toggle('shifted');
+});

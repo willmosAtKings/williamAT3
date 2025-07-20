@@ -7,22 +7,18 @@
   <link rel="stylesheet" href="/static/css/notification-system.css" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-
 </head>
 <body data-user-id="{{ user_id }}" data-user-role="{{ user_role }}">
-  <div class="sidebar">
-    <h2>Menu</h2>
-    <a class="tab active" id="dashboard-tab" href="#" onclick="switchTab('dashboard')">
-      <i class="fas fa-calendar-alt"></i> Dashboard
-    </a>
-    <a class="tab" id="notifications-tab" href="#" onclick="switchTab('notifications')">
-      <i class="fas fa-bell"></i> Notifications
-    </a>
-  </div>
 
-  <div class="main-content">
+  <div class="main-content full-width">
     <div class="navbar">
       <div class="nav-left">
+        <!-- Schedule Button -->
+        <button id="scheduleBtn" class="schedule-button">
+          <i class="fas fa-bell"></i>
+        </button>
+
+        <!-- Create Button -->
         <button class="create-button"><i class="fas fa-plus"></i> Create</button>
       </div>
       
@@ -67,22 +63,20 @@
       </div>
       <div id="calendarContainer" style="display: none;"></div> <!-- for week/day views only -->
     </div>
-
-    <!-- Notifications Content -->
-    <div id="notifications-content" class="tab-content">
-      <div class="notifications-container">
-        <h1 class="notifications-title">Upcoming Event Notifications</h1>
-        <div id="notifications-list" class="notifications-list">
-          <div class="loading-spinner">
-            <i class="fas fa-spinner fa-spin"></i>
-            <span>Loading notifications...</span>
-          </div>
-        </div>
-      </div>
-    </div>
-
   </div>
 
+  <!-- Schedule Popout -->
+  <div id="schedulePopout" class="schedule-popout hidden">
+    <h2>Upcoming Events</h2>
+    <div id="schedule-list" class="schedule-list">
+      <div class="loading-spinner">
+        <i class="fas fa-spinner fa-spin"></i>
+        <span>Loading events...</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Event Modal -->
   <div id="eventModal" class="event-modal">
     <div class="event-modal-content">
       <span class="close-modal">×</span>
@@ -110,8 +104,7 @@
         </div>
         
         <div class="event-metadata">
-          <div class="event-tags" id="eventTags">
-          </div>
+          <div class="event-tags" id="eventTags"></div>
         </div>
 
         <div class="event-notifications-control">
