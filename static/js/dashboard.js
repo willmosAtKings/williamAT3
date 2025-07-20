@@ -121,7 +121,7 @@ document.addEventListener('DOMContentLoaded', function() {
       const formatOptions = { month: 'short', day: 'numeric' };
       dateDisplay.textContent = `${weekStart.toLocaleDateString('en-US', formatOptions)} - ${weekEnd.toLocaleDateString('en-US', formatOptions)}, ${currentDate.getFullYear()}`;
     } else if (view === 'day') {
-      dateDisplay.textContent = currentDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+      dateDisplay.textContent = currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
     }
   }
 

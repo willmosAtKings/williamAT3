@@ -1,8 +1,4 @@
 document.addEventListener('DOMContentLoaded', () => {
-    console.log("profile_preferences.js loaded");
-
-    // This structure should be the same as in create_event.js
-    // In a real app, you might fetch this from an API
     const tagStructure = {
         "Year Level": ["year-7", "year-8", "year-9", "year-10", "year-11", "year-12"],
         "Co-Curricular": ["sport", "chess-club", "debate-team", "photography"],
@@ -109,13 +105,13 @@ document.addEventListener('DOMContentLoaded', () => {
             const result = await response.json();
 
             if (response.ok) {
-                alert(result.message);
+                window.notify.success(result.message || "Tags saved successfully!");
             } else {
-                alert('Error: ' + (result.error || 'Could not save tags.'));
+                window.notify.error('Error: ' + (result.error || 'Could not save tags.'));
             }
         } catch (error) {
             console.error("Failed to save tags:", error);
-            alert("An unexpected error occurred.");
+            window.notify.error("An unexpected error occurred.");
         }
     });
 
