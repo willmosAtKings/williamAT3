@@ -1,3 +1,84 @@
+/*===== TAB SWITCHING FUNCTIONALITY =====*/
+
+function switchTab(tabName) {
+  // Remove active class from all tabs and content
+  document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+
+  // Add active class to selected tab and content
+  document.getElementById(tabName + '-tab').classList.add('active');
+  document.getElementById(tabName + '-content').classList.add('active');
+
+  // Load content based on tab
+  if (tabName === 'notifications') {
+    loadNotifications();
+  }
+}
+
+/*===== NOTIFICATIONS FUNCTIONALITY =====*/
+
+async function loadNotifications() {
+  const notificationsList = document.getElementById('notifications-list');
+
+  try {
+    const response = await fetch('/api/notifications');
+
+    if (response.ok) {
+      const data = await response.json();
+
+      if (data.length === 0) {
+        notificationsList.innerHTML = `
+          <div class="no-notifications">
+            <i class="fas fa-bell-slash"></i>
+            <p>No upcoming events in the next few days.</p>
+          </div>
+        `;
+      } else {
+        notificationsList.innerHTML = data.map(event => `
+          <div class="notification-item priority-${event.priority}" onclick="handleNotificationClick(${event.id}, '${event.title.replace(/'/g, "\\'")}')">
+            <div class="notification-item-title">${event.title}</div>
+            <div class="notification-item-time">${event.time}</div>
+            <div class="notification-item-description">${event.description}</div>
+          </div>
+        `).join('');
+      }
+    } else {
+      throw new Error('Failed to load');
+    }
+  } catch (error) {
+    notificationsList.innerHTML = `
+      <div class="no-notifications">
+        <i class="fas fa-exclamation-triangle"></i>
+        <p>Error loading notifications.</p>
+      </div>
+    `;
+  }
+}
+
+function handleNotificationClick(eventId, eventTitle) {
+  // Switch to dashboard tab
+  switchTab('dashboard');
+
+  // Find and open the event modal for this event using the event ID
+  setTimeout(() => {
+    // First try to find by data-event-id attribute
+    const eventElement = document.querySelector(`[data-event-id="${eventId}"]`);
+    if (eventElement) {
+      eventElement.click();
+      return;
+    }
+
+    // Fallback: search by title in event items
+    const eventElements = document.querySelectorAll('.event-item');
+    for (let element of eventElements) {
+      if (element.textContent.includes(eventTitle)) {
+        element.click();
+        break;
+      }
+    }
+  }, 100);
+}
+
 document.addEventListener('DOMContentLoaded', function() {
   // Handle Create Event button click - navigate to create event page
   document.querySelector('.create-button').addEventListener('click', function(e) {
@@ -35,7 +116,7 @@ document.addEventListener('DOMContentLoaded', function() {
   // Function to load and display events based on current view
   async function loadEventsForCurrentView() {
     const view = document.getElementById('calendarView').value;
-    console.log(`Loading events for ${view} view, currentDate: ${currentDate.toDateString()}`);
+
     
     try {
       let start;
@@ -49,13 +130,13 @@ document.addEventListener('DOMContentLoaded', function() {
       }
       
       const startStr = `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, '0')}-${String(start.getDate()).padStart(2, '0')}`;
-      console.log(`API call: /api/events?range=${view}&start=${startStr}`);
+
       
       const response = await fetch(`/api/events?range=${view}&start=${startStr}`);
       
       if (response.ok) {
         const events = await response.json();
-        console.log(`Received ${events.length} events:`, events);
+
         
         if (view === 'month') {
           renderMonthCalendar(currentDate, events);
@@ -402,7 +483,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
       try {
         const eventId = summariseBtn.getAttribute('data-event-id');
-        console.log(`Fetching event data for ID: ${eventId}`);
+
         const response = await fetch(`/api/event/${eventId}`);
         const eventData = await response.json();
 
@@ -518,12 +599,12 @@ document.addEventListener('DOMContentLoaded', function() {
           } else {
             // Revert the toggle if the request failed
             notificationToggle.checked = !notificationToggle.checked;
-            alert('Failed to update notification settings: ' + (result.error || 'Unknown error'));
+            notify.error('Failed to update notification settings: ' + (result.error || 'Unknown error'));
           }
         } catch (error) {
           // Revert the toggle if the request failed
           notificationToggle.checked = !notificationToggle.checked;
-          alert('Failed to update notification settings: ' + error.message);
+          notify.error('Failed to update notification settings: ' + error.message);
         }
       };
     } else {

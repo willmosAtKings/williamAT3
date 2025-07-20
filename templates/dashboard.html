@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <title>Dashboard</title>
   <link rel="stylesheet" href="/static/css/dashboard.css" />
+  <link rel="stylesheet" href="/static/css/notification-system.css" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 
@@ -11,10 +12,12 @@
 <body data-user-id="{{ user_id }}" data-user-role="{{ user_role }}">
   <div class="sidebar">
     <h2>Menu</h2>
-    <a class="tab" href="/dashboard"><i class="fas fa-calendar-alt"></i> Dashboard</a>
-    <a class="tab" href="/notifications"><i class="fas fa-bell"></i> Notifications</a>
-    <!-- More tabs later i.e. upcoming events, events near you (?) -->
-    
+    <a class="tab active" id="dashboard-tab" href="#" onclick="switchTab('dashboard')">
+      <i class="fas fa-calendar-alt"></i> Dashboard
+    </a>
+    <a class="tab" id="notifications-tab" href="#" onclick="switchTab('notifications')">
+      <i class="fas fa-bell"></i> Notifications
+    </a>
   </div>
 
   <div class="main-content">
@@ -56,12 +59,27 @@
       </div>
     </div>
     
-    <div class="calendar-container">
-      <div class="calendar-grid">
+    <!-- Dashboard Content -->
+    <div id="dashboard-content" class="tab-content active">
+      <div class="calendar-container">
+        <div class="calendar-grid">
+        </div>
       </div>
+      <div id="calendarContainer" style="display: none;"></div> <!-- for week/day views only -->
     </div>
 
-    <div id="calendarContainer" style="display: none;"></div> <!-- for week/day views only -->
+    <!-- Notifications Content -->
+    <div id="notifications-content" class="tab-content">
+      <div class="notifications-container">
+        <h1 class="notifications-title">Upcoming Event Notifications</h1>
+        <div id="notifications-list" class="notifications-list">
+          <div class="loading-spinner">
+            <i class="fas fa-spinner fa-spin"></i>
+            <span>Loading notifications...</span>
+          </div>
+        </div>
+      </div>
+    </div>
 
   </div>
 
@@ -127,6 +145,7 @@
     </div>
   </div>
 
+  <script src="/static/js/notification-system.js"></script>
   <script src="/static/js/dashboard.js"></script>
 </body>
 </html>

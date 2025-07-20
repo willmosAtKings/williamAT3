@@ -1,0 +1,38 @@
+<div class="navbar">
+    <div class="nav-left">
+      <button class="create-button"><i class="fas fa-plus"></i> Create</button>
+    </div>
+    
+    <div class="nav-center">
+      <div class="date-navigation">
+        <button id="prevMonth" class="nav-arrow">←</button>
+        
+        <div class="date-display">
+          <h2 id="currentDateDisplay"></h2>
+          <select id="calendarView">
+            <option value="month">Month</option>
+            <option value="week">Week</option>
+            <option value="day">Day</option>
+          </select>
+        </div>
+        
+        <button id="nextMonth" class="nav-arrow">→</button>
+      </div>
+    </div>
+    
+    <div class="user-menu">
+      <div class="user-profile" onclick="document.querySelector('.menu-dropdown').classList.toggle('show')">
+        <img src="/static/images/profile-placeholder.svg" alt="User Avatar" class="avatar" />
+        <span class="username">{{ user_email or 'Guest' }}</span>
+        <i class="arrow down"></i>
+      </div>
+    
+      <div class="menu-dropdown">
+        <a href="/profile/info">Profile Settings</a>
+        <form action="/logout" method="POST" class="placeholder">
+          <button id="logout">Logout</button>
+        </form>
+      </div>
+    </div>
+  </div>
+  

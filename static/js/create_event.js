@@ -218,7 +218,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const startTime = document.getElementById('start_time').value;
         const endTime = document.getElementById('end_time').value;
         if (!date || !startTime || !endTime) {
-          alert('Please fill in date, start time, and end time.');
+          notify.error('Please fill in date, start time, and end time.');
           return;
         }
         startTimeStr = `${date}T${startTime}`;
@@ -230,7 +230,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const endDate = document.getElementById('multi_end_date').value;
         const endTime = document.getElementById('multi_end_time').value;
         if (!startDate || !startTime || !endDate || !endTime) {
-          alert('Please fill in start date/time and end date/time for multi-day event.');
+          notify.error('Please fill in start date/time and end date/time for multi-day event.');
           return;
         }
         startTimeStr = `${startDate}T${startTime}`;
@@ -244,7 +244,7 @@ document.addEventListener('DOMContentLoaded', () => {
         repeatInterval = document.getElementById('rec_interval').value;
         repeatEnds = document.getElementById('rec_ends').value;
         if (!startDate || !startTime || !endTime || !repeatUnit || !repeatInterval) {
-          alert('Please fill in all required fields for recurring event.');
+          notify.error('Please fill in all required fields for recurring event.');
           return;
         }
         startTimeStr = `${startDate}T${startTime}`;
@@ -252,7 +252,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (repeatUnit === 'weekly') {
           repeatWeekdays = Array.from(document.querySelectorAll('#weekdaySelector input[type="checkbox"]:checked')).map(cb => cb.value);
           if (repeatWeekdays.length === 0) {
-            alert('Please select at least one weekday for weekly recurring event.');
+            notify.error('Please select at least one weekday for weekly recurring event.');
             return;
           }
         }
@@ -287,14 +287,15 @@ document.addEventListener('DOMContentLoaded', () => {
       const result = await response.json();
 
       if (response.ok) {
-        alert('Event created successfully!');
-        window.location.href = '/dashboard';
+        notify.success('Event created successfully!');
+        setTimeout(() => {
+          window.location.href = '/dashboard';
+        }, 1000);
       } else {
-        alert('Error creating event: ' + (result.error || 'Unknown error'));
+        notify.error('Error creating event: ' + (result.error || 'Unknown error'));
       }
     } catch (err) {
-      alert('Unexpected error: ' + err.message);
-      console.error(err);
+      notify.error('Unexpected error: ' + err.message);
     }
   });
 });

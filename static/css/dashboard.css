@@ -72,7 +72,7 @@ html, body {
   top: 0;
   z-index: 100;
   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-  /* --- FIX: Prevent this element from shrinking --- */
+  /*===== PREVENT NAVBAR SHRINKING =====*/
   flex-shrink: 0;
 }
 
@@ -168,21 +168,21 @@ html, body {
 
 /* ===== CALENDAR GRID ===== */
 .calendar-container {
-  /* --- FIX: This element will now grow to fill the available space --- */
+  /*===== FLEXIBLE CALENDAR CONTAINER =====*/
   flex: 1; 
   display: flex;
   flex-direction: column;
   padding: 1rem;
   box-sizing: border-box;
-  overflow: hidden; /* Hide any overflow from the container itself */
+  overflow: hidden; /*===== HIDE CONTAINER OVERFLOW =====*/
 }
 
 .calendar-grid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  grid-template-rows: auto repeat(5, 1fr); /* Changed to 5 rows for better fit, can be 6 */
+  grid-template-rows: auto repeat(5, 1fr); /*===== OPTIMIZED GRID ROWS =====*/
   gap: 0.5rem;
-  /* --- FIX: Remove fixed height and let it grow --- */
+  /*===== FLEXIBLE GRID HEIGHT =====*/
   flex-grow: 1;
   box-sizing: border-box;
 }
@@ -210,7 +210,7 @@ html, body {
   position: relative;
   cursor: pointer;
   transition: background-color 0.2s;
-  /* --- FIX: Allow scrolling within a cell if it's full --- */
+  /*===== CELL OVERFLOW SCROLLING =====*/
   overflow-y: auto;
 }
 
@@ -219,7 +219,7 @@ html, body {
   box-shadow: 0 0 0 2px #007bff inset;
 }
 
-/* Position the add button in the bottom right corner */
+/*===== ADD EVENT BUTTON POSITIONING =====*/
 .add-event-btn {
   position: absolute;
   bottom: 5px;
@@ -244,7 +244,7 @@ html, body {
   display: block;
 }
 
-/* Make sure events don't overlap with the add button */
+/*===== EVENT BUTTON SPACING =====*/
 .day-cell .event-item {
   margin-bottom: 2px;
   max-width: calc(100% - 10px);
@@ -340,7 +340,7 @@ html, body {
   width: 100%;
 }
 
-/* Common styles for day and week grids */
+/*===== COMMON DAY AND WEEK GRID STYLES =====*/
 .timeline-grid, .week-grid {
   display: grid;
   width: 100%;
@@ -350,7 +350,7 @@ html, body {
   overflow-x: hidden;
 }
 
-/* Fixed grid layouts */
+/*===== FIXED GRID LAYOUTS =====*/
 .timeline-grid {
   grid-template-columns: 60px 1fr;
   width: 100%;
@@ -881,4 +881,164 @@ html, body {
 
 .toggle-switch input:checked ~ .notification-toggle-label span {
   color: #333;
+}
+
+/*===== TAB SWITCHING SYSTEM =====*/
+
+.tab-content {
+  display: none;
+  width: 100%;
+  height: 100%;
+}
+
+.tab-content.active {
+  display: flex;
+  flex-direction: column;
+}
+
+/*===== NOTIFICATIONS INTEGRATION =====*/
+
+.notifications-container {
+  padding: 1.5rem;
+  height: 100%;
+  overflow-y: auto;
+}
+
+.notifications-title {
+  font-size: 1.8rem;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 1.5rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid #e5e7eb;
+}
+
+.notifications-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.notification-item {
+  background: white;
+  border-radius: 8px;
+  padding: 1rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  border-left: 4px solid;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.notification-item:hover {
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+  transform: translateY(-1px);
+}
+
+.notification-item.priority-0 {
+  border-left-color: #10b981;
+}
+
+.notification-item.priority-1 {
+  border-left-color: #f59e0b;
+}
+
+.notification-item.priority-2 {
+  border-left-color: #ef4444;
+}
+
+.notification-item-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #1f2937;
+  margin-bottom: 0.5rem;
+}
+
+.notification-item-time {
+  font-size: 0.9rem;
+  color: #6b7280;
+  margin-bottom: 0.5rem;
+}
+
+.notification-item-description {
+  font-size: 0.95rem;
+  color: #374151;
+  line-height: 1.4;
+}
+
+.loading-spinner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 2rem;
+  color: #6b7280;
+}
+
+.loading-spinner i {
+  font-size: 1.2rem;
+}
+
+.no-notifications {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: #6b7280;
+}
+
+.no-notifications i {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+  color: #d1d5db;
+}
+
+/*===== FIXED NAVIGATION POSITIONING =====*/
+
+.calendar-controls {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 2rem;
+  margin: 1rem 0;
+  padding: 0 1.5rem;
+  position: relative;
+}
+
+.calendar-controls h2 {
+  margin: 0;
+  font-size: 1.5rem;
+  min-width: 220px;
+  text-align: center;
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.calendar-controls button {
+  background-color: #007bff;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  font-size: 1.2rem;
+  cursor: pointer;
+  border-radius: 5px;
+  min-width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  z-index: 10;
+}
+
+.calendar-controls button:hover {
+  background-color: #0056b3;
+}
+
+.calendar-controls button:first-of-type {
+  position: absolute;
+  left: 1.5rem;
+}
+
+.calendar-controls button:last-of-type {
+  position: absolute;
+  right: 1.5rem;
 }

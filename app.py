@@ -13,6 +13,7 @@ import os
 from google.oauth2 import service_account
 import google.auth.transport.requests
 from flask_mail import Message
+from flask_login import current_user, LoginManager
 from utils.email_utils import send_email, init_mail
 
 
@@ -26,7 +27,7 @@ def create_app():
     
     db.init_app(app)
     migrate = Migrate(app, db)
-    
+
     # Mail configuration
     app.config['MAIL_SERVER'] = os.getenv('MAIL_SERVER')
     app.config['MAIL_PORT'] = int(os.getenv('MAIL_PORT', 587))  # Default to 587 if not set
@@ -45,16 +46,23 @@ def create_app():
         from models.event_exceptions import EventExceptions
         from models.notifications import Notification
 
+
+
+    
     @app.route('/')
     def index():
         return render_template('login.html')
+
+    @app.route('/unauthorised')
+    def unauthorised():
+        return render_template('unauthorised.html'), 403
     
     @app.route("/dashboard", methods=["GET", "POST"])
     def dashboard():
         if 'user_id' not in session:
             if request.method == 'POST':
-                return jsonify({'redirectTo': url_for('login')})
-            return redirect(url_for('login'))
+                return jsonify({'redirectTo': url_for('unauthorised')})
+            return redirect(url_for('unauthorised'))
 
         from models.user import User
         user = db.session.get(User, session['user_id'])
@@ -459,7 +467,7 @@ def create_app():
         from models.user import User
 
         if 'user_id' not in session:
-            return jsonify({'error': 'Unauthorized'}), 401
+            return jsonify({'error': 'Unauthorised'}), 401
 
         user = db.session.get(User, session['user_id'])
         event = db.session.get(Event, event_id)
@@ -759,20 +767,90 @@ def create_app():
 
     @app.route('/notifications', methods=['GET'])
     def notifications():
-        user_id = session.get('user_id')
-        if not user_id:
-            return redirect(url_for('login'))
+        if 'user_id' not in session:
+            return redirect(url_for('unauthorized'))
 
-        now = datetime.now()
-        three_days_later = now + timedelta(days=3)
+        from models.user import User
+        from models.event import Event
+        from models.notifications import Notification
+        from datetime import datetime, timedelta
 
-        events = Event.query.filter(
-            Event.creator_id == user_id,
+        user = db.session.get(User, session['user_id'])
+        if not user:
+            return redirect(url_for('unauthorized'))
+
+        # Get upcoming events in the next 7 days for notifications
+        now = datetime.utcnow()
+        week_from_now = now + timedelta(days=7)
+
+        upcoming_events = Event.query.filter(
             Event.start_time >= now,
-            Event.start_time <= three_days_later
-        ).order_by(Event.start_time.asc()).all()
+            Event.start_time <= week_from_now,
+            Event.notifications_silenced == False
+        ).order_by(Event.start_time).all()
 
-        return render_template('notifications.html', events=events)
+        # Filter events based on user permissions
+        user_events = []
+        for event in upcoming_events:
+            # Include events created by the user or events they can see based on tags
+            if (event.creator_id == user.id or
+                (hasattr(user, 'tags') and user.tags and
+                 any(tag in (event.tags or '') for tag in user.tags.split(',')))):
+                user_events.append(event)
+
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return jsonify([
+                {
+                    "id": event.id,
+                    "title": event.title,
+                    "time": event.start_time.strftime("%A, %B %d at %I:%M %p"),
+                    "description": event.description or "",
+                    "priority": event.priority or 0
+                } for event in user_events
+            ])
+
+        # Fallback: for direct page loads
+        return render_template("notifications.html", events=user_events)
+
+    @app.route('/api/notifications', methods=['GET'])
+    def api_notifications():
+        if 'user_id' not in session:
+            return jsonify({'error': 'Unauthorized'}), 401
+
+        from models.user import User
+        from models.event import Event
+        from datetime import datetime, timedelta
+
+        user = db.session.get(User, session['user_id'])
+        if not user:
+            return jsonify({'error': 'User not found'}), 404
+
+        # Get upcoming events in the next 7 days for notifications
+        now = datetime.utcnow()
+        week_from_now = now + timedelta(days=7)
+
+        upcoming_events = Event.query.filter(
+            Event.start_time >= now,
+            Event.start_time <= week_from_now,
+            Event.notifications_silenced == False
+        ).order_by(Event.start_time).all()
+
+        # Filter events based on user permissions
+        user_events = []
+        for event in upcoming_events:
+            # Include events created by the user or events they can see based on tags
+            if (event.creator_id == user.id or
+                (hasattr(user, 'tags') and user.tags and
+                 any(tag in (event.tags or '') for tag in user.tags.split(',')))):
+                user_events.append({
+                    "id": event.id,
+                    "title": event.title,
+                    "time": event.start_time.strftime("%A, %B %d at %I:%M %p"),
+                    "description": event.description or "",
+                    "priority": event.priority or 0
+                })
+
+        return jsonify(user_events)
 
 
     return app

@@ -1,22 +1,29 @@
-console.log("Login.js is loaded");
+/*===== LOGIN FUNCTIONALITY =====*/
 
+// Password toggle functionality
+function togglePassword(fieldId) {
+  const passwordField = document.getElementById(fieldId);
+  const toggleIcon = document.getElementById(fieldId + '-toggle-icon');
+
+  if (passwordField.type === 'password') {
+    passwordField.type = 'text';
+    toggleIcon.classList.remove('fa-eye');
+    toggleIcon.classList.add('fa-eye-slash');
+  } else {
+    passwordField.type = 'password';
+    toggleIcon.classList.remove('fa-eye-slash');
+    toggleIcon.classList.add('fa-eye');
+  }
+}
 
 document.getElementById('LgnBtn').addEventListener('click', function () {
     const password = document.getElementById('password').value.trim();
     const email = document.getElementById('email').value.trim();
 
     if (!password || !email) {
-        alert('Please fill in all fields');
+        notify.error('Please fill in all fields');
         return;
     }
-
-    const data = {
-        password: password,
-        email: email
-    };
-
-    //const csrfToken = document.querySelector('input[name="csrf_token"]')?.value || '';
-
 
     fetch('/login', {
         method: 'POST',
@@ -31,18 +38,17 @@ document.getElementById('LgnBtn').addEventListener('click', function () {
     .then(function (response) {
         return response.json().then(function (responseData) {
             if (response.ok) {
-                alert('Login successful!');
-                window.location.href = '/dashboard';
+                notify.success('Login successful!');
+                setTimeout(() => {
+                    window.location.href = '/dashboard';
+                }, 1000);
             } else {
-                console.error('Login failed:', responseData.error);
-                alert(responseData.error || 'Login failed');
-
+                notify.error(responseData.error || 'Login failed');
             }
         });
     })
     .catch(function (error) {
-        console.error('Error:', error); // delete later
-        alert('An error occurred during login');
+        notify.error('An error occurred during login');
     });
     
 });

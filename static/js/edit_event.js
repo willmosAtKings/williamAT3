@@ -1,13 +1,15 @@
 document.addEventListener('DOMContentLoaded', () => {
-    console.log("edit_event.js loaded");
+
 
     // --- GET EVENT ID FROM URL ---
     const pathParts = window.location.pathname.split('/');
     const eventId = pathParts[pathParts.length - 1];
 
     if (!eventId) {
-        alert("No event ID found!");
-        window.location.href = '/dashboard';
+        notify.error("No event ID found!");
+        setTimeout(() => {
+            window.location.href = '/dashboard';
+        }, 1000);
         return;
     }
 
@@ -136,7 +138,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             const eventData = await response.json();
             originalEventData = eventData; // Store for later comparison
-            console.log("Event data received:", eventData);
+
 
             // Populate basic fields
             document.getElementById('title').value = eventData.title;
@@ -230,8 +232,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
         } catch (error) {
             console.error("Error:", error);
-            alert(error.message);
-            window.location.href = '/dashboard';
+            notify.error(error.message);
+            setTimeout(() => {
+                window.location.href = '/dashboard';
+            }, 1000);
         }
     }
 
@@ -293,7 +297,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        console.log("Submitting payload:", payload);
+
 
         try {
             const response = await fetch(`/api/event/${eventId}`, {
@@ -304,14 +308,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const result = await response.json();
             if (response.ok) {
-                alert(result.message);
-                window.location.href = '/dashboard';
+                notify.success(result.message);
+                setTimeout(() => {
+                    window.location.href = '/dashboard';
+                }, 1000);
             } else {
                 throw new Error(result.error || 'Failed to update event.');
             }
         } catch (error) {
-            console.error("Error:", error);
-            alert(error.message);
+            notify.error(error.message);
         }
     });
 
@@ -358,24 +363,25 @@ document.addEventListener('DOMContentLoaded', () => {
                         }
                     }
                     
-                    console.log(`Sending DELETE request to: ${url}`);
+
                     
                     const response = await fetch(url, {
                         method: 'DELETE'
                     });
                     
                     const result = await response.json();
-                    console.log("Delete response:", result);
+
                     
                     if (response.ok) {
-                        alert(result.message);
-                        window.location.href = '/dashboard';
+                        notify.success(result.message);
+                        setTimeout(() => {
+                            window.location.href = '/dashboard';
+                        }, 1000);
                     } else {
                         throw new Error(result.error || 'Failed to delete event.');
                     }
                 } catch (error) {
-                    console.error("Error deleting event:", error);
-                    alert(error.message);
+                    notify.error(error.message);
                 }
             }
         });
