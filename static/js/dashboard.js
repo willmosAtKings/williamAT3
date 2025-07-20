@@ -13,6 +13,14 @@ function switchTab(tabName) {
   if (tabName === 'notifications') {
     loadNotifications();
   }
+  
+  const dateNav = document.getElementById('dateNavigation');
+  if (tabName === 'notifications') {
+    dateNav.style.display = 'none';
+  } else {
+    dateNav.style.display = 'flex';
+  }
+
 }
 
 /*===== NOTIFICATIONS FUNCTIONALITY =====*/
