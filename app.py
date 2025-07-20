@@ -499,31 +499,17 @@ def create_app():
 
     @app.route('/api/events')
     def get_events():
-        from models.event import Event
-        from models.user import User
-        from models.event_exceptions import EventExceptions
-        
         if 'user_id' not in session:
             return jsonify({'error': 'Unauthorised'}), 401
-        
+
         user = db.session.get(User, session['user_id'])
         if not user:
             return jsonify({'error': 'User not found'}), 401
-        
-        # Different query logic based on user role
-        if user.role == 'admin':
-            # Admins see all events
-            query = Event.query
-        elif user.role == 'teacher':
+
+        if user.role == 'teacher':
             # Teachers see all events EXCEPT those created by students
-            # First, get all student user IDs
             student_ids = [u.id for u in User.query.filter_by(role='student').all()]
-            
-            # Then filter events to exclude those created by students
-            if student_ids:  # Only apply filter if there are students
-                query = Event.query.filter(~Event.creator_id.in_(student_ids))
-            else:
-                query = Event.query
+            query = Event.query.filter(~Event.creator_id.in_(student_ids)) if student_ids else Event.query
         else:
             # Students and other roles see events based on tags
             user_tags = user.tags
@@ -536,8 +522,7 @@ def create_app():
                 for tag in user_tags:
                     filter_conditions.append(Event.tags.like(f'%{tag}%'))
             query = Event.query.filter(or_(*filter_conditions))
-        
-        # Rest of the function remains the same
+
         range_type = request.args.get('range', 'month')
         start_str = request.args.get('start') or request.args.get('date')
         if start_str:
@@ -550,19 +535,17 @@ def create_app():
                 else:
                     end = start + relativedelta(months=1)
                 query = query.filter(
-                    Event.start_time < end, 
+                    Event.start_time < end,
                     Event.end_time > start
                 )
             except Exception:
                 return jsonify({'error': 'Invalid date format'}), 400
-        
+
         events = query.all()
-        
-        # Process events and exceptions as before
+
+        # Process events and exceptions
         final_events = []
         processed_exceptions = set()
-
-        # Get all relevant exceptions in one query
         event_ids = [e.id for e in events if e.is_recurring]
         exceptions = EventExceptions.query.filter(EventExceptions.original_event_id.in_(event_ids)).all() if event_ids else []
         exception_map = {}
@@ -571,13 +554,13 @@ def create_app():
             exception_map[key] = exc
 
         for event in events:
-            if event.is_recurring:
-                exception = exception_map.get((event.id, event.start_time.date()))
-                if exception:
-                    processed_exceptions.add(exception.id)
-                    if exception.title is None: # Deleted occurrence
-                        continue
-                    else: # Modified occurrence
+            try:
+                if event.is_recurring:
+                    exception = exception_map.get((event.id, event.start_time.date()))
+                    if exception:
+                        processed_exceptions.add(exception.id)
+                        if exception.title is None:
+                            continue  # Deleted occurrence
                         final_events.append({
                             'id': event.id,
                             'title': exception.title,
@@ -587,10 +570,25 @@ def create_app():
                             'start_time': exception.start_time.isoformat(),
                             'end_time': exception.end_time.isoformat(),
                             'creator_id': event.creator_id,
-                            'creator_role': event.creator.role,
+                            'creator_role': event.creator.role if event.creator else 'unknown',
                             'is_recurring': True,
                             'recurrence_group_id': event.recurrence_group_id,
                             'is_exception': True,
+                            'notifications_silenced': event.notifications_silenced
+                        })
+                    else:
+                        final_events.append({
+                            'id': event.id,
+                            'title': event.title,
+                            'description': event.description,
+                            'priority': event.priority,
+                            'tags': event.tags,
+                            'start_time': event.start_time.isoformat(),
+                            'end_time': event.end_time.isoformat(),
+                            'creator_id': event.creator_id,
+                            'creator_role': event.creator.role if event.creator else 'unknown',
+                            'is_recurring': True,
+                            'recurrence_group_id': event.recurrence_group_id,
                             'notifications_silenced': event.notifications_silenced
                         })
                 else:
@@ -603,27 +601,15 @@ def create_app():
                         'start_time': event.start_time.isoformat(),
                         'end_time': event.end_time.isoformat(),
                         'creator_id': event.creator_id,
-                        'creator_role': event.creator.role,
-                        'is_recurring': True,
-                        'recurrence_group_id': event.recurrence_group_id,
+                        'creator_role': event.creator.role if event.creator else 'unknown',
+                        'is_recurring': False,
                         'notifications_silenced': event.notifications_silenced
                     })
-            else:
-                final_events.append({
-                    'id': event.id,
-                    'title': event.title,
-                    'description': event.description,
-                    'priority': event.priority,
-                    'tags': event.tags,
-                    'start_time': event.start_time.isoformat(),
-                    'end_time': event.end_time.isoformat(),
-                    'creator_id': event.creator_id,
-                    'creator_role': event.creator.role,
-                    'is_recurring': False,
-                    'notifications_silenced': event.notifications_silenced
-                })
-        
+            except Exception as e:
+                print(f"Error processing event ID {event.id}: {e}")
+
         return jsonify(final_events)
+
 
     @app.route('/profile/info')
     def profile_info():
