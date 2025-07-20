@@ -1040,3 +1040,88 @@ html, body {
   margin-left: 320px;
   transition: margin-left 0.3s ease;
 }
+
+
+.schedule-popout {
+  position: fixed;
+  top: 0; /* remove whitespace above */
+  left: 0;
+  width: 320px;
+  height: 100vh; /* full height */
+  background-color: #fff;
+  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.1);
+  z-index: 110;
+  overflow-y: auto;
+  transform: translateX(-100%);
+  transition: transform 0.3s ease;
+  padding: 4rem 1rem 2rem 1rem; /* extra top padding for title spacing */
+  box-sizing: border-box;
+}
+
+
+/* When active/show */
+.schedule-popout.active {
+  transform: translateX(0);
+}
+
+/* Heading inside the popout */
+.schedule-popout > h2 {
+  text-align: center;
+  margin-top: 0;  /* pulled up to top */
+  margin-bottom: 1rem;
+  font-weight: 600;
+  font-size: 1.4rem;
+  color: #333;
+  background: none;
+  padding: 0;
+}
+
+/* Notification/Event items inside schedule-list */
+.schedule-list .notification-item {
+  position: relative;
+  padding: 0.75rem 1rem 0.75rem 1.5rem; /* extra left padding for colored bar */
+  margin-bottom: 0.75rem;
+  border-radius: 8px;
+  background-color: #f9f9f9;
+  color: #333;
+  cursor: pointer;
+  box-sizing: border-box;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* Colored bar on the left side for priority */
+.schedule-list .notification-item::before {
+  content: '';
+  position: absolute;
+  left: 0.5rem;
+  top: 0.5rem;
+  bottom: 0.5rem;
+  width: 6px;
+  border-radius: 3px;
+}
+
+/* Priority colors on the colored bar */
+.notification-item.priority-0::before { background-color: #4caf50; }  /* green */
+.notification-item.priority-1::before { background-color: #ff9800; }  /* orange */
+.notification-item.priority-2::before { background-color: #f44336; }  /* red */
+
+/* Adjust calendar and navbar width when popout is active */
+.main-content {
+  margin-left: 0 !important;
+  transition: margin-left 0.3s ease;
+}
+
+.main-content.shifted {
+  margin-left: 320px;
+}
+
+.navbar {
+  width: 100%;
+  padding-left: 0;
+  transition: padding-left 0.3s ease;
+}
+
+#hamburgerIcon {
+  padding-left: 1rem; /* adjust as needed */
+  cursor: pointer;
+}

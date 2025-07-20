@@ -639,17 +639,19 @@ function closeSummaryModal() {
 
 
   
-const scheduleBtn = document.getElementById('scheduleBtn');
+const hamburgerIcon = document.getElementById('hamburgerIcon');
 const schedulePopout = document.getElementById('schedulePopout');
 const mainContent = document.querySelector('.main-content');
 const navbar = document.querySelector('.navbar');
 
-scheduleBtn.addEventListener('click', () => {
-  schedulePopout.classList.toggle('active');
-  mainContent.classList.toggle('shifted');
-  navbar.classList.toggle('shifted');
-  if (schedulePopout.classList.contains('active')) {
-    loadSchedule(); // or loadNotifications() if that’s the function name
-  }
+if (hamburgerIcon && schedulePopout && mainContent && navbar) {
+  hamburgerIcon.addEventListener('click', () => {
+    schedulePopout.classList.toggle('active');
+    mainContent.classList.toggle('shifted');
+    navbar.classList.toggle('shifted');
 
-});
+    if (schedulePopout.classList.contains('active')) {
+      loadSchedule(); // replace with your actual function if different
+    }
+  });
+}
