@@ -19,33 +19,10 @@ function toggleSchedulePanel() {
 }
 
 
-function switchTab(tabName) {
-  // Remove active class from all tabs and content
-  document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
-  document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
-
-  // Add active class to selected tab and content
-  document.getElementById(tabName + '-tab').classList.add('active');
-  document.getElementById(tabName + '-content').classList.add('active');
-
-  // Load content based on tab
-  if (tabName === 'notifications') {
-    loadNotifications();
-  }
-  
-  const dateNav = document.getElementById('dateNavigation');
-  if (tabName === 'notifications') {
-    dateNav.style.display = 'none';
-  } else {
-    dateNav.style.display = 'flex';
-  }
-
-}
-
 /*===== NOTIFICATIONS FUNCTIONALITY =====*/
 
 async function loadSchedule() {
-  const notificationsList = document.getElementById('notifications-list');
+  const scheduleList = document.getElementById('schedule-list');
 
   try {
     const response = await fetch('/api/notifications');
@@ -54,14 +31,14 @@ async function loadSchedule() {
       const data = await response.json();
 
       if (data.length === 0) {
-        notificationsList.innerHTML = `
+        scheduleList.innerHTML = `
           <div class="no-notifications">
             <i class="fas fa-bell-slash"></i>
             <p>No upcoming events in the next few days.</p>
           </div>
         `;
       } else {
-        notificationsList.innerHTML = data.map(event => `
+        scheduleList.innerHTML = data.map(event => `
           <div class="notification-item priority-${event.priority}" onclick="handleNotificationClick(${event.id}, '${event.title.replace(/'/g, "\\'")}')">
             <div class="notification-item-title">${event.title}</div>
             <div class="notification-item-time">${event.time}</div>
@@ -73,10 +50,10 @@ async function loadSchedule() {
       throw new Error('Failed to load');
     }
   } catch (error) {
-    notificationsList.innerHTML = `
+    scheduleList.innerHTML = `
       <div class="no-notifications">
         <i class="fas fa-exclamation-triangle"></i>
-        <p>Error loading notifications.</p>
+        <p>Error loading schedule.</p>
       </div>
     `;
   }
@@ -671,4 +648,8 @@ scheduleBtn.addEventListener('click', () => {
   schedulePopout.classList.toggle('active');
   mainContent.classList.toggle('shifted');
   navbar.classList.toggle('shifted');
+  if (schedulePopout.classList.contains('active')) {
+    loadSchedule(); // or loadNotifications() if that’s the function name
+  }
+
 });
