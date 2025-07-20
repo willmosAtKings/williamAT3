@@ -200,6 +200,7 @@ html, body {
 
 /* ===== DAY CELL ===== */
 .day-cell {
+  height: 115px;
   background-color: #fff;
   border: 1px solid #ddd;
   border-radius: 4px;
