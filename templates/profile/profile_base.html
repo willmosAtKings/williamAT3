@@ -1,0 +1,36 @@
+<!-- templates/profile_base.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>{% block title %}Profile{% endblock %}</title>
+  <link rel="stylesheet" href="/static/css/profile.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+</head>
+<body>
+  <div class="sidebar">
+    <h2>Profile</h2>
+    <a href="/profile/info" class="tab {% if active_tab == 'info' %}active{% endif %}">
+      <i class="fas fa-user-circle"></i> User Info
+    </a>
+    <a href="/profile/privacy" class="tab {% if active_tab == 'privacy' %}active{% endif %}">
+      <i class="fas fa-lock"></i> Privacy & Security
+    </a>
+    <a href="/profile/preferences" class="tab {% if active_tab == 'preferences' %}active{% endif %}">
+      <i class="fas fa-cogs"></i> Preferences
+    </a>
+  </div>
+
+  <div class="main-content">
+    <div class="top-bar">
+      <a href="/dashboard" class="back-button">
+        <i class="fas fa-arrow-left"></i> Back to Dashboard
+      </a>
+    </div>
+    {% block content %}{% endblock %}
+  </div>
+
+  {% block scripts %}{% endblock %}
+</body>
+</html>

@@ -1,53 +1,37 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <title>Preferences</title>
-  <link rel="stylesheet" href="/static/css/profile.css" />
-  <!-- FIX: ADD THE MISSING STYLESHEET FOR THE MEGA MENU -->
-  <link rel="stylesheet" href="/static/css/create_event.css" />
-</head>
-<body>
-  <div class="sidebar">
-    <h2>Profile</h2>
-    <a href="/profile/info" class="tab">User Info</a>
-    <a href="/profile/account" class="tab">Account Settings</a>
-    <a href="/profile/privacy" class="tab">Privacy & Security</a>
-    <a href="/profile/preferences" class="tab active">Preferences</a>
-  </div>
+<!-- templates/profile/preferences.html -->
+{% extends "profile/profile_base.html" %}
+{% block title %}Preferences{% endblock %}
+{% set active_tab = 'preferences' %}
 
-  <div class="main-content">
-    <div class="profile-card">
-        <h1>Preferences</h1>
-        <p>Manage your notification settings and customize your calendar experience by selecting tags relevant to you.</p>
-        
-        <hr style="margin: 2rem 0;">
+{% block content %}
+  <div class="profile-card">
+    <h1>Preferences</h1>
+    <p>Manage your notification settings and customize your calendar experience by selecting tags relevant to you.</p>
+    
+    <hr style="margin: 2rem 0;">
 
-        <h2>My Calendar Tags</h2>
-        <p>Select tags that apply to you. You will see events on your calendar that match these tags.</p>
+    <h2>My Calendar Tags</h2>
+    <p>Select tags that apply to you. You will see events on your calendar that match these tags.</p>
 
-        <!-- This div holds the user's current tags, for JavaScript to read -->
-        <div id="user-current-tags" data-current-tags="{{ current_tags }}"></div>
+    <div id="user-current-tags" data-current-tags="{{ current_tags }}"></div>
 
-        <div class="form-group">
-            <label>Your Tags</label>
-            <div class="mega-menu-container">
-                <div id="tag-selector-button" class="tag-selector-button">
-                    <span>Select Your Tags...</span>
-                    <i class="arrow down"></i>
-                </div>
-                <div id="mega-menu-dropdown" class="mega-menu-dropdown">
-                    <!-- Populated by JavaScript -->
-                </div>
-                <input type="hidden" id="selected-tags-input">
-            </div>
-            <div id="selected-tags-display" class="selected-tags-display"></div>
+    <div class="form-group">
+      <label>Your Tags</label>
+      <div class="mega-menu-container">
+        <div id="tag-selector-button" class="tag-selector-button">
+          <span>Select Your Tags...</span>
+          <i class="arrow down"></i>
         </div>
-
-        <button id="saveTagsBtn" class="save-button">Save My Tags</button>
+        <div id="mega-menu-dropdown" class="mega-menu-dropdown"></div>
+        <input type="hidden" id="selected-tags-input">
+      </div>
+      <div id="selected-tags-display" class="selected-tags-display"></div>
     </div>
-  </div>  
 
+    <button id="saveTagsBtn" class="save-button">Save My Tags</button>
+  </div>
+{% endblock %}
+
+{% block scripts %}
   <script src="/static/js/preferences.js"></script>
-</body>
-</html>
+{% endblock %}

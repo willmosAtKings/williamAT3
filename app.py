@@ -639,11 +639,6 @@ def create_app():
         
         return render_template('profile/info.html', user=user)
 
-    
-    @app.route('/profile/account')
-    def profile_account():
-        return render_template('profile/account.html')
-
     @app.route('/profile/privacy')
     def profile_privacy():
         return render_template('profile/privacy.html')

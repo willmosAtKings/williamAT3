@@ -1,25 +1,11 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <title>Privacy & Security</title>
-  <link rel="stylesheet" href="/static/css/profile.css" />
-</head>
-<body>
-  <div class="sidebar">
-    <h2>Profile</h2>
-    <a href="/profile/info" class="tab">User Info</a>
-    <a href="/profile/account" class="tab">Account Settings</a>
-    <a href="/profile/privacy" class="tab active">Privacy & Security</a>
-    <a href="/profile/preferences" class="tab">Preferences</a>
-  </div>
+<!-- templates/profile/privacy.html -->
+{% extends "profile/profile_base.html" %}
+{% block title %}Privacy & Security{% endblock %}
+{% set active_tab = 'privacy' %}
 
-  <div class="main-content">
-    <div class="profile-card">
-        <h1>Privacy & Security</h1>
-        <p>Privacy settings, 2FA setup, login activity here.</p>
-    </div>
+{% block content %}
+  <div class="profile-card">
+    <h1>Privacy & Security</h1>
+    <p>Privacy settings, 2FA setup, login activity here.</p>
   </div>
-  
-</body>
-</html>
+{% endblock %}
