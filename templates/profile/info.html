@@ -4,19 +4,17 @@
 {% set active_tab = 'info' %}
 
 {% block content %}
-  <div class="profile-container">
-    <div class="profile-card">
-      <div class="profile-info">
-        <h2>User Email</h2>
-        <p class="email">{{ user.email }}</p>
+  <div class="profile-card">
+    <h1>User Information</h1>
 
-        <div class="profile-actions">
-          <form action="/logout" method="POST">
-            <button class="logout-btn">Logout</button>
-          </form>
-        </div>
-      </div>
+    <div class="info-box">
+      <span class="label">Email:</span>
+      <span class="value">{{ user.email }}</span>
     </div>
+
+    <form action="/logout" method="POST" style="margin-top: 2rem;">
+      <button class="logout-btn">Logout</button>
+    </form>
   </div>
 {% endblock %}
 

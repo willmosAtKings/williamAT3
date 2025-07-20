@@ -848,6 +848,36 @@ def create_app():
         return jsonify(user_events)
 
 
+    @app.route('/profile/change-password', methods=['POST'])
+    def change_password():
+        if 'user_id' not in session:
+            flash("You must be logged in to change your password.", "error")
+            return redirect(url_for('login'))
+
+        user = User.query.get(session['user_id'])
+
+        current_password = request.form.get('current_password')
+        new_password = request.form.get('new_password')
+        confirm_password = request.form.get('confirm_password')
+
+        if not user.check_password(current_password):
+            flash("Current password is incorrect.", "error")
+            return redirect(url_for('profile_privacy'))
+
+        if new_password != confirm_password:
+            flash("New passwords do not match.", "error")
+            return redirect(url_for('profile_privacy'))
+
+        if len(new_password) < 8:
+            flash("New password must be at least 8 characters.", "error")
+            return redirect(url_for('profile_privacy'))
+
+        user.set_password(new_password)
+        db.session.commit()
+
+        flash("Password successfully changed.", "success")
+        return redirect(url_for('profile_privacy'))
+
     return app
 
 from scheduler import start_scheduler
