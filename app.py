@@ -34,6 +34,7 @@ def create_app():
     app.config['MAIL_USE_TLS'] = os.getenv('MAIL_USE_TLS', 'True') == 'True'
     app.config['MAIL_DEFAULT_SENDER'] = os.getenv('MAIL_DEFAULT_SENDER')
     app.config['MAIL_PASSWORD'] = os.getenv('MAIL_PASSWORD')
+    app.config['MAIL_PASSWORD'] = app.config['MAIL_PASSWORD'].replace('\xa0', ' ').strip()
     app.config['MAIL_USERNAME'] = os.getenv('MAIL_USERNAME')
 
     init_mail(app)
@@ -871,6 +872,7 @@ from scheduler import start_scheduler
 if __name__ == "__main__":
     app = create_app()
     if os.environ.get("WERKZEUG_RUN_MAIN") == "true":
+        print(f"Password: {repr(app.config['MAIL_PASSWORD'])}")
         start_scheduler(app)
         print("✅ Scheduler started")
 
