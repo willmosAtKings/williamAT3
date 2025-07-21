@@ -479,6 +479,23 @@ def create_app():
                             return jsonify({'message': 'The event series was updated successfully!'})
                     except (KeyError, ValueError) as e:
                         return jsonify({'error': f'Invalid or missing date format: {str(e)}'}), 400
+                    
+                else:
+                    # Update single (non-recurring) event
+                    event.title = data.get('title', event.title)
+                    event.description = data.get('description', event.description)
+                    event.priority = int(data.get('priority', event.priority))
+                    if user.role in ['teacher', 'admin']:
+                        event.tags = data.get('tags', event.tags)
+
+                    # Parse and update datetime fields
+                    new_start = datetime.fromisoformat(data['start_time'])
+                    new_end = datetime.fromisoformat(data['end_time'])
+                    event.start_time = new_start
+                    event.end_time = new_end
+
+                    db.session.commit()
+                    return jsonify({'message': 'Event updated successfully.'})
             except Exception:
                 return jsonify({'error': 'Oops! Something went wrong.'}), 500
 
