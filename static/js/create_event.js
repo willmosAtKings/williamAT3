@@ -1,13 +1,19 @@
+/*===== EVENT CREATION FORM FUNCTIONALITY =====*/
+
+/**
+ * Initialize event creation form with role-based permissions and tag selection
+ * Handles both single and recurring event creation with validation
+ */
 document.addEventListener('DOMContentLoaded', () => {
   console.log("create_event.js loaded and DOM ready");
 
-  // --- ROLE-BASED UI ---
+  // --- ROLE-BASED UI CONTROL ---
   // Read the user's role from the data attribute on the body tag
   const userRole = document.body.dataset.userRole;
   const tagSection = document.getElementById('tag-section');
 
-  // If the user is a student, hide the entire tag selection UI.
-  // The backend will enforce privacy by ignoring any tags they might try to send.
+  // Students cannot add tags (privacy/permission restriction)
+  // Hide tag selection UI for students - backend also enforces this
   if (userRole === 'student') {
     if (tagSection) {
       tagSection.style.display = 'none';
@@ -15,12 +21,12 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   // --- END ROLE-BASED UI ---
 
-  // --- MEGA MENU SETUP ---
-  // This structure is now only used by teachers/admins.
+  // --- TAG SELECTION MEGA MENU SETUP ---
+  // Predefined tag categories for event classification
   const tagStructure = {
-    "Audience": ["public", "student", "teacher", "admin"],
-    "Year Level": ["year-7", "year-8", "year-9", "year-10", "year-11", "year-12"],
-    "Activity Type": ["sport", "academic", "co-curricular", "assembly", "excursion"],
+    "Audience": ["public", "student", "teacher", "admin"],           // Who can see the event
+    "Year Level": ["year-7", "year-8", "year-9", "year-10", "year-11", "year-12"], // Academic year targeting
+    "Activity Type": ["sport", "academic", "co-curricular", "assembly", "excursion"], // Event category
   };
 
   const megaMenuDropdown = document.getElementById('mega-menu-dropdown');

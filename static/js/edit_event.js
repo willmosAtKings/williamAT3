@@ -1,10 +1,17 @@
+/*===== EVENT EDITING FUNCTIONALITY =====*/
+
+/**
+ * Initialize event editing form with existing event data
+ * Handles loading, updating, and deleting events with role-based permissions
+ */
 document.addEventListener('DOMContentLoaded', () => {
 
-
-    // --- GET EVENT ID FROM URL ---
+    // --- EXTRACT EVENT ID FROM URL ---
+    // Parse URL to get event ID for loading existing event data
     const pathParts = window.location.pathname.split('/');
     const eventId = pathParts[pathParts.length - 1];
 
+    // Validate event ID exists
     if (!eventId) {
         notify.error("No event ID found!");
         setTimeout(() => {
@@ -13,17 +20,20 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
     }
 
-    // --- FORM AND MEGA MENU ELEMENTS ---
+    // --- INITIALIZE FORM ELEMENTS AND VARIABLES ---
     const form = document.getElementById('eventForm');
-    const userRole = document.body.dataset.userRole;
+    const userRole = document.body.dataset.userRole;  // User role for permissions
     const tagSection = document.getElementById('tag-section');
     const deleteButton = document.getElementById('deleteEventBtn');
+
+    // Tag selection mega menu elements
     const megaMenuDropdown = document.getElementById('mega-menu-dropdown');
     const tagSelectorButton = document.getElementById('tag-selector-button');
     const selectedTagsInput = document.getElementById('selected-tags-input');
     const selectedTagsDisplay = document.getElementById('selected-tags-display');
+
     let selectedTags = new Set();
-    let originalEventData = null; // Store original event data for comparison
+    let originalEventData = null; // Store original event data for change detection
 
     const tagStructure = {
         "Audience": ["public", "student", "teacher", "admin"],

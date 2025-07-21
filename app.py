@@ -1,21 +1,24 @@
+# Core Flask imports for web framework functionality
 from flask import Flask, render_template, request, redirect, url_for, make_response, jsonify, session, flash, json
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash
 import secrets
 from extensions import db
 from datetime import datetime, timedelta
-from dateutil.relativedelta import relativedelta
+from dateutil.relativedelta import relativedelta  # For handling recurring events with months/years
 from sqlalchemy import or_, and_
 from sqlalchemy.exc import SQLAlchemyError
 from flask_migrate import Migrate
 import uuid
 import requests
 import os
+# Google API imports for AI summarization feature
 from google.oauth2 import service_account
 import google.auth.transport.requests
 from flask_mail import Message
 from flask_login import current_user, LoginManager
 from utils.email_utils import send_email, init_mail
+# Custom security validation utilities
 from utils.input_validation import (
     validate_email, validate_password, sanitize_string, validate_role,
     validate_priority, validate_datetime_string, validate_integer,
@@ -23,25 +26,34 @@ from utils.input_validation import (
 )
 
 def create_app():
+    """
+    Application factory function that creates and configures the Flask app
+    """
     app = Flask(__name__)
+    # Database configuration - using SQLite for development
     app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///app.db"
+    # Secret key for session management and security
     app.secret_key = 'insanely-secret-key'
-    
+
+    # Initialize database and migration support
     db.init_app(app)
     migrate = Migrate(app, db)
 
-    # Mail configuration
+    # Mail configuration - loads from environment variables for security
     app.config['MAIL_SERVER'] = os.getenv('MAIL_SERVER')
     app.config['MAIL_PORT'] = int(os.getenv('MAIL_PORT', 587))  # Default to 587 if not set
     app.config['MAIL_USE_TLS'] = os.getenv('MAIL_USE_TLS', 'True') == 'True'
     app.config['MAIL_DEFAULT_SENDER'] = os.getenv('MAIL_DEFAULT_SENDER')
     app.config['MAIL_PASSWORD'] = os.getenv('MAIL_PASSWORD')
+    # Clean up password string - remove non-breaking spaces that might cause issues
     if app.config['MAIL_PASSWORD'] is not None:
         app.config['MAIL_PASSWORD'] = app.config['MAIL_PASSWORD'].replace('\xa0', ' ').strip()
     app.config['MAIL_USERNAME'] = os.getenv('MAIL_USERNAME')
 
+    # Initialize Flask-Mail extension
     init_mail(app)
 
+    # Create database tables and import models within app context
     with app.app_context():
         db.create_all()
         from models.event import Event
@@ -49,16 +61,24 @@ def create_app():
         from models.event_exceptions import EventExceptions
         from models.notifications import Notification
 
+    # Route definitions start here
     @app.route('/')
     def index():
+        """Home page - redirects to login"""
         return render_template('login.html')
 
     @app.route('/unauthorised')
     def unauthorised():
+        """Page shown when user lacks permission for an action"""
         return render_template('unauthorised.html'), 403
     
     @app.route("/dashboard", methods=["GET", "POST"])
     def dashboard():
+        """
+        Main dashboard page - shows calendar interface
+        Handles both GET (page load) and POST (AJAX redirects) requests
+        """
+        # Check if user is logged in
         if 'user_id' not in session:
             if request.method == 'POST':
                 return jsonify({'redirectTo': url_for('unauthorised')})
@@ -67,24 +87,33 @@ def create_app():
         from models.user import User
         user = db.session.get(User, session['user_id'])
 
+        # Validate user exists in database
         if not user:
             session.clear()
             if request.method == 'POST':
                 return jsonify({'redirectTo': url_for('login')})
             return redirect(url_for('login'))
 
+        # Handle AJAX POST requests (for dynamic redirects)
         if request.method == 'POST':
             return jsonify({'redirectTo': url_for('dashboard')})
 
+        # Render dashboard with user information
         return render_template("dashboard.html", user_email=user.email, user_id=user.id, user_role=user.role)
 
     @app.route('/login', methods=['POST', 'GET'])
     def login():
+        """
+        User authentication route
+        GET: Shows login form
+        POST: Processes login credentials (JSON or form data)
+        """
         from models.user import User
         if request.method == 'GET':
             return render_template('login.html')
 
         try:
+            # Handle both JSON (AJAX) and form submissions
             if request.is_json:
                 data = safe_get_json(request)
                 if data is None:
@@ -92,35 +121,43 @@ def create_app():
                 email = data.get('email')
                 password = data.get('password')
             else:
+                # Traditional form submission
                 email = request.form.get('email')
                 password = request.form.get('password')
 
+            # Basic input validation
             if not email or not password:
                 return jsonify({'error': 'Missing email or password'}), 400
 
-            # Validate and sanitize email
+            # Validate and sanitize email input
             validated_email = validate_email(email)
             if not validated_email:
                 return jsonify({'error': 'Invalid credentials'}), 401
 
-            # Validate password format
+            # Validate password format (security check)
             if not validate_password(password):
                 return jsonify({'error': 'Invalid credentials'}), 401
 
+            # Look up user and verify password
             user = User.query.filter_by(email=validated_email).first()
             if user and user.check_password(password):
                 try:
+                    # Generate new session tokens for security
                     user.regenerate_tokens()
                     db.session.commit()
+                    # Store user info in session
                     session['user_id'] = user.id
                     session['user_role'] = user.role
+                    # Create response with secure session cookie
                     response = make_response()
                     response.set_cookie('session_token', user.session_token, httponly=True, secure=False, samesite='Strict', max_age=2 * 60 * 60)
                     if request.is_json:
+                        # JSON response for AJAX requests
                         response.set_data(json.dumps({'message': 'Login successful', 'role': user.role}))
                         response.headers['Content-Type'] = 'application/json'
                         return response
                     else:
+                        # Redirect for form submissions
                         return redirect(url_for('dashboard'))
                 except SQLAlchemyError:
                     return handle_db_error("login")
@@ -137,11 +174,17 @@ def create_app():
 
     @app.route('/register', methods=['POST', 'GET'])
     def register():
+        """
+        User registration route
+        GET: Shows registration form
+        POST: Creates new user account with validation
+        """
         from models.user import User
         if request.method == 'GET':
             return render_template('register.html')
 
         try:
+            # Handle both JSON (AJAX) and form submissions
             if request.is_json:
                 data = safe_get_json(request)
                 if data is None:
@@ -150,6 +193,7 @@ def create_app():
                 password = data.get('password')
                 role = data.get('role')
             else:
+                # Traditional form submission
                 email = request.form.get('email')
                 password = request.form.get('password')
                 role = request.form.get('role')
@@ -187,6 +231,12 @@ def create_app():
 
     @app.route('/event/create', methods=['GET', 'POST'])
     def create_event():
+        """
+        Event creation route
+        GET: Shows event creation form
+        POST: Creates new event with validation and recurring event support
+        """
+        # Check user permissions
         user_role = session.get('user_role')
         if user_role not in ['student', 'teacher', 'admin']:
             return jsonify({'error': 'Unauthorised'}), 403
@@ -195,6 +245,7 @@ def create_app():
             return render_template('create_event.html', user_role=user_role)
 
         try:
+            # Only accept JSON for event creation
             if not request.is_json:
                 return jsonify({'error': 'Content-Type must be application/json'}), 415
 
@@ -202,7 +253,7 @@ def create_app():
             if data is None:
                 return jsonify({'error': 'Invalid JSON'}), 400
 
-            # Sanitize and validate string inputs
+            # Sanitize and validate string inputs for security
             title = sanitize_string(data.get('title', ''), 200)
             description = sanitize_string(data.get('description', ''), 2000)
             tags = sanitize_tags(data.get('tags', ''))
@@ -210,32 +261,38 @@ def create_app():
             if not title.strip():
                 return jsonify({'error': 'Event title is required'}), 400
 
+            # Students cannot add tags (permission restriction)
             if user_role == 'student':
                 tags = ''
 
             event_type = data.get('event_type')
+            # Handle recurring events (multiple instances with pattern)
             if event_type == 'recurring':
                 required = ['title', 'start_time', 'end_time', 'rec_start_date', 'rec_ends', 'rec_interval', 'rec_unit']
                 if not all(data.get(f) for f in required):
                     return jsonify({'error': 'Missing recurring event fields'}), 400
                 try:
+                    # Parse recurring event parameters
                     start_date = datetime.strptime(data['rec_start_date'], "%Y-%m-%d")
                     end_date = datetime.strptime(data['rec_ends'], "%Y-%m-%d")
                     start_time = datetime.fromisoformat(data['start_time']).time()
                     end_time = datetime.fromisoformat(data['end_time']).time()
-                    interval = int(data['rec_interval'])
-                    unit = data['rec_unit']
-                    weekdays_list = data.get('rec_weekdays', [])
+                    interval = int(data['rec_interval'])  # How often to repeat
+                    unit = data['rec_unit']  # daily, weekly, monthly, yearly
+                    weekdays_list = data.get('rec_weekdays', [])  # For weekly recurrence
                 except Exception as e:
                     return jsonify({'error': f'Invalid recurring event format: {str(e)}'}), 400
 
+                # Validate date range
                 if end_date < start_date:
                     return jsonify({'error': 'End date cannot be before the start date.'}), 400
-                
+
+                # Prevent extremely long recurring series (performance protection)
                 limit_date = start_date + relativedelta(years=2)
                 if end_date > limit_date:
                     return jsonify({'error': 'Recurring events cannot extend more than 2 years.'}), 400
 
+                # Generate unique ID to group all instances of this recurring event
                 recurrence_group_id = str(uuid.uuid4())
                 weekday_map = ['MO', 'TU', 'WE', 'TH', 'FR', 'SA', 'SU']
                 current = start_date
@@ -597,6 +654,11 @@ def create_app():
 
     @app.route('/api/events')
     def get_events():
+        """
+        API endpoint to retrieve events based on user role and date range
+        Returns filtered events in JSON format for calendar display
+        """
+        # Authentication check
         if 'user_id' not in session:
             return jsonify({'error': 'Unauthorised'}), 401
 
@@ -604,6 +666,7 @@ def create_app():
         if not user:
             return jsonify({'error': 'User not found'}), 401
 
+        # Role-based event filtering
         if user.role == 'teacher':
             # Teachers see all events EXCEPT those created by students
             student_ids = [u.id for u in User.query.filter_by(role='student').all()]
@@ -710,24 +773,27 @@ def create_app():
 
     @app.route('/profile/info')
     def profile_info():
+        """User profile information page - shows user details"""
         if 'user_id' not in session:
             return redirect(url_for('login'))
-        
+
         from models.user import User
         user = db.session.get(User, session['user_id'])
-        
+
         if not user:
             session.clear()
             return redirect(url_for('login'))
-        
+
         return render_template('profile/info.html', user=user)
 
     @app.route('/profile/privacy')
     def profile_privacy():
+        """User privacy and security settings page"""
         return render_template('profile/privacy.html')
-    
+
     @app.route('/profile/preferences')
     def preferences():
+        """User preferences page - shows saved tags and settings"""
         from models.user import User
         user_id = session.get('user_id')
         if not user_id:
@@ -768,12 +834,17 @@ def create_app():
 
     @app.route('/api/summarise', methods=['POST'])
     def summarise_event():
+        """
+        AI-powered event summarization using Google's Gemini API
+        Takes event details and returns a formatted markdown summary
+        """
         try:
+            # Safely parse JSON input
             data = safe_get_json(request)
             if data is None:
                 return jsonify({'error': 'Invalid JSON data'}), 400
 
-            # Validate and sanitize input data
+            # Validate and sanitize input data for security
             event_description = sanitize_string(data.get('description', ''), 2000)
             start_time = sanitize_string(data.get('start_time', ''), 50)
             end_time = sanitize_string(data.get('end_time', ''), 50)
@@ -852,6 +923,10 @@ def create_app():
 
     @app.route('/notifications', methods=['GET'])
     def notifications():
+        """
+        Notifications page - shows upcoming events as notifications
+        Displays events happening in the next 7 days
+        """
         if 'user_id' not in session:
             return redirect(url_for('unauthorized'))
 
@@ -939,8 +1014,13 @@ def create_app():
 
     @app.route('/profile/change-password', methods=['POST'])
     def change_password():
+        """
+        Password change functionality with validation
+        Requires current password verification before allowing change
+        """
         from models.user import User
 
+        # Authentication check
         if 'user_id' not in session:
             flash("You must be logged in to change your password.", "error")
             return redirect(url_for('login'))
@@ -951,6 +1031,7 @@ def create_app():
                 flash("User not found.", "error")
                 return redirect(url_for('login'))
 
+            # Get form data
             current_password = request.form.get('current_password')
             new_password = request.form.get('new_password')
             confirm_password = request.form.get('confirm_password')

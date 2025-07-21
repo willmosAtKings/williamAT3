@@ -1,22 +1,36 @@
-Flask==3.0.3
-Flask-Cors==5.0.0
-Flask-Login==0.6.3
-Flask-Mail==0.10.0
-Flask-Migrate==4.1.0
-Flask-SQLAlchemy==3.1.1
-Flask-WTF==1.2.2
-itsdangerous==2.2.0
-Werkzeug==3.0.4
-WTForms==3.2.1
-Jinja2==3.1.4
-python-dateutil==2.9.0.post0
-SQLAlchemy==2.0.40
-requests==2.32.4
-google-auth==2.40.3
-google-auth-oauthlib==1.2.2
-httplib2==0.22.0
-requests-oauthlib==2.0.0
-oauthlib==3.3.1
-APScheduler==3.11.0
-cryptography==43.0.3
-tzlocal==5.3.1
+# EventEase Application Dependencies
+# Install with: pip install -r requirements.txt
+
+# Core Flask framework and extensions
+Flask==3.0.3                    # Main web framework
+Flask-Cors==5.0.0              # Cross-origin resource sharing
+Flask-Login==0.6.3             # User session management
+Flask-Mail==0.10.0             # Email functionality for notifications
+Flask-Migrate==4.1.0           # Database migration support
+Flask-SQLAlchemy==3.1.1        # Database ORM integration
+Flask-WTF==1.2.2               # Form handling and CSRF protection
+
+# Core utilities and security
+itsdangerous==2.2.0            # Secure data serialization
+Werkzeug==3.0.4               # WSGI utilities and security helpers
+WTForms==3.2.1                # Form validation and rendering
+Jinja2==3.1.4                 # Template engine
+cryptography==43.0.3          # Cryptographic functions
+
+# Database and data handling
+SQLAlchemy==2.0.40            # Database toolkit and ORM
+python-dateutil==2.9.0.post0  # Date/time parsing for recurring events
+
+# HTTP requests and API integration
+requests==2.32.4              # HTTP library for external API calls
+
+# Google API integration (for AI summarization)
+google-auth==2.40.3           # Google authentication
+google-auth-oauthlib==1.2.2   # OAuth2 flow for Google APIs
+httplib2==0.22.0              # HTTP client library
+requests-oauthlib==2.0.0      # OAuth support for requests
+oauthlib==3.3.1               # OAuth implementation
+
+# Background task scheduling
+APScheduler==3.11.0           # Advanced Python Scheduler for notifications
+tzlocal==5.3.1                # Local timezone detection

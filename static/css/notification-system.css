@@ -1,32 +1,36 @@
 /*===== CUSTOM NOTIFICATION SYSTEM STYLES =====*/
+/* Toast-style notifications for user feedback (success, error, info) */
 
+/* Container for all notifications - positioned in top-right corner */
 .notification-container {
   position: fixed;
   top: 20px;
   right: 20px;
-  z-index: 10000;
+  z-index: 10000;        /* High z-index to appear above all content */
   display: flex;
-  flex-direction: column;
+  flex-direction: column; /* Stack notifications vertically */
   gap: 10px;
-  pointer-events: none;
+  pointer-events: none;   /* Allow clicks to pass through container */
 }
 
+/* Individual notification styling */
 .notification {
   background: white;
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   min-width: 300px;
   max-width: 400px;
-  opacity: 0;
-  transform: translateX(100%);
-  transition: all 0.3s ease-in-out;
-  pointer-events: auto;
-  border-left: 4px solid;
+  opacity: 0;                          /* Hidden by default */
+  transform: translateX(100%);         /* Start off-screen to the right */
+  transition: all 0.3s ease-in-out;   /* Smooth slide-in animation */
+  pointer-events: auto;                /* Allow interaction with notification */
+  border-left: 4px solid;             /* Colored border (color set by type) */
 }
 
+/* Show state - notification slides in and becomes visible */
 .notification-show {
   opacity: 1;
-  transform: translateX(0);
+  transform: translateX(0);  /* Slide to final position */
 }
 
 .notification-content {

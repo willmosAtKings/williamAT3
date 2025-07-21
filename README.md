@@ -1,5 +1,8 @@
 # School Calendar Web App - EventEase
 
+<!-- Comprehensive documentation for the EventEase calendar application -->
+<!-- This README provides setup instructions, feature overview, and technical details -->
+
 An intelligent calendar web application built using Flask and SQLite. Designed for students, teachers, parents, and admins to collaboratively manage academic events, track assessments, and receive smart notifications.
 
 ## Table of Contents

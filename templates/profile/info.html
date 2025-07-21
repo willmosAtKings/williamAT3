@@ -1,17 +1,20 @@
-<!-- templates/profile/info.html -->
+<!-- User profile information page template -->
+<!-- Displays user account details and logout functionality -->
 {% extends "profile/profile_base.html" %}
 {% block title %}User Info{% endblock %}
-{% set active_tab = 'info' %}
+{% set active_tab = 'info' %}  {# Set active tab for navigation highlighting #}
 
 {% block content %}
   <div class="profile-card">
     <h1>User Information</h1>
 
+    <!-- Display user email address -->
     <div class="info-box">
       <span class="label">Email:</span>
       <span class="value">{{ user.email }}</span>
     </div>
 
+    <!-- Logout form - uses POST for security -->
     <form action="/logout" method="POST" style="margin-top: 2rem;">
       <button class="logout-btn">Logout</button>
     </form>

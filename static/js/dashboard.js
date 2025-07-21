@@ -1,13 +1,19 @@
 /*===== TAB SWITCHING FUNCTIONALITY =====*/
 
+/**
+ * Toggle the schedule panel visibility and load events when opened
+ * Shows loading spinner while fetching upcoming events
+ */
 function toggleSchedulePanel() {
   const panel = document.getElementById('schedulePanel');
   const list = document.getElementById('notifications-list');
 
+  // Toggle panel visibility
   panel.classList.toggle('hidden');
 
-  // Only fetch events if the panel is now visible
+  // Only fetch events if the panel is now visible (performance optimization)
   if (!panel.classList.contains('hidden')) {
+    // Show loading state while fetching
     list.innerHTML = `
       <div class="loading-spinner">
         <i class="fas fa-spinner fa-spin"></i>
@@ -21,10 +27,15 @@ function toggleSchedulePanel() {
 
 /*===== NOTIFICATIONS FUNCTIONALITY =====*/
 
+/**
+ * Load and display upcoming events in the schedule panel
+ * Fetches events from the notifications API and renders them
+ */
 async function loadSchedule() {
   const scheduleList = document.getElementById('schedule-list');
 
   try {
+    // Fetch upcoming events from server
     const response = await fetch('/api/notifications');
 
     if (response.ok) {
@@ -91,8 +102,14 @@ function handleNotificationClick(eventId, eventTitle) {
 
 
 
+/*===== MAIN INITIALIZATION =====*/
+
+/**
+ * Initialize dashboard functionality when DOM is loaded
+ * Sets up event listeners, calendar display, and user interface
+ */
 document.addEventListener('DOMContentLoaded', function() {
-  // Handle Create Event button click - navigate to create event page
+  // Handle Create Event button click - navigate to create event page with current date
   document.querySelector('.create-button').addEventListener('click', function(e) {
     e.preventDefault();
     const date = currentDate;
@@ -103,6 +120,7 @@ document.addEventListener('DOMContentLoaded', function() {
     window.location.href = `/event/create?date=${dateStr}`;
   });
 
+  // Calendar grid reference and current date tracking
   const calendarGrid = document.querySelector('.calendar-grid');
   let currentDate = new Date();
 

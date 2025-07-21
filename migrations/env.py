@@ -1,10 +1,14 @@
+# Alembic migration environment configuration
+# This file configures the database migration environment for Flask-Migrate
+# It handles the connection to the database and model imports for migrations
+
 import logging
 from logging.config import fileConfig
 
 from flask import current_app
 from alembic import context
 
-# Alembic Config object
+# Alembic Config object - contains migration settings
 config = context.config
 
 # Setup logging

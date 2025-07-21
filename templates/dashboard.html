@@ -3,11 +3,16 @@
 <head>
   <meta charset="UTF-8" />
   <title>Dashboard</title>
+  <!-- Main dashboard styles -->
   <link rel="stylesheet" href="/static/css/dashboard.css" />
+  <!-- Notification system styles -->
   <link rel="stylesheet" href="/static/css/notification-system.css" />
+  <!-- Font Awesome icons for UI elements -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <!-- Markdown parser for AI-generated summaries -->
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 </head>
+<!-- Body includes user data attributes for JavaScript access -->
 <body data-user-id="{{ user_id }}" data-user-role="{{ user_role }}">
 
   <div class="main-content full-width">

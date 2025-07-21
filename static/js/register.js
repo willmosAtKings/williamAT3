@@ -1,22 +1,36 @@
 /*===== REGISTRATION FUNCTIONALITY =====*/
 
-// Password toggle functionality
+/**
+ * Toggle password visibility for better user experience
+ * Switches between showing and hiding password text
+ *
+ * @param {string} fieldId - ID of the password input field
+ */
 function togglePassword(fieldId) {
   const passwordField = document.getElementById(fieldId);
   const toggleIcon = document.getElementById(fieldId + '-toggle-icon');
 
+  // Toggle between password and text input types
   if (passwordField.type === 'password') {
+    // Show password
     passwordField.type = 'text';
     toggleIcon.classList.remove('fa-eye');
     toggleIcon.classList.add('fa-eye-slash');
   } else {
+    // Hide password
     passwordField.type = 'password';
     toggleIcon.classList.remove('fa-eye-slash');
     toggleIcon.classList.add('fa-eye');
   }
 }
 
-// Password strength checker
+/**
+ * Check password strength and provide feedback
+ * Evaluates password against security criteria
+ *
+ * @param {string} password - Password to evaluate
+ * @returns {Object} - Score and feedback for password strength
+ */
 function checkPasswordStrength(password) {
   let score = 0;
   let feedback = [];

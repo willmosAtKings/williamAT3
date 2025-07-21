@@ -1,3 +1,7 @@
+/*===== EVENT CREATION FORM STYLES =====*/
+/* Styles for the event creation and editing forms */
+
+/* Page layout - centered form on light background */
 body {
   margin: 0;
   padding: 0;
@@ -9,6 +13,7 @@ body {
   min-height: 100vh;
 }
 
+/* Main form container - white card with shadow */
 form#eventForm {
   background-color: #ffffff;
   padding: 2rem 2.5rem;
@@ -18,9 +23,10 @@ form#eventForm {
   max-width: 600px;
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 1rem;  /* Consistent spacing between form elements */
 }
 
+/* Form labels - consistent styling */
 form#eventForm label {
   font-weight: 600;
   color: #333;
