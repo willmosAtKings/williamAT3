@@ -1134,3 +1134,18 @@ html, body {
   cursor: pointer;
   outline: none;
 }
+
+.event-item.priority-0 {
+  background-color: #e8f5e8; /* Low priority */
+  border-left: 3px solid #4caf50;
+}
+
+.event-item.priority-1 {
+  background-color: #fff3e0; /* Medium priority */
+  border-left: 3px solid #ff9800;
+}
+
+.event-item.priority-2 {
+  background-color: #ffebee; /* High priority */
+  border-left: 3px solid #f44336;
+}

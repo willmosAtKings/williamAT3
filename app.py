@@ -6,6 +6,7 @@ from extensions import db
 from datetime import datetime, timedelta
 from dateutil.relativedelta import relativedelta
 from sqlalchemy import or_, and_
+from sqlalchemy.exc import SQLAlchemyError
 from flask_migrate import Migrate
 import uuid
 import requests
@@ -15,10 +16,11 @@ import google.auth.transport.requests
 from flask_mail import Message
 from flask_login import current_user, LoginManager
 from utils.email_utils import send_email, init_mail
-
-
-
-
+from utils.input_validation import (
+    validate_email, validate_password, sanitize_string, validate_role,
+    validate_priority, validate_datetime_string, validate_integer,
+    sanitize_tags, safe_get_json, handle_db_error, handle_validation_error
+)
 
 def create_app():
     app = Flask(__name__)
@@ -34,11 +36,11 @@ def create_app():
     app.config['MAIL_USE_TLS'] = os.getenv('MAIL_USE_TLS', 'True') == 'True'
     app.config['MAIL_DEFAULT_SENDER'] = os.getenv('MAIL_DEFAULT_SENDER')
     app.config['MAIL_PASSWORD'] = os.getenv('MAIL_PASSWORD')
-    app.config['MAIL_PASSWORD'] = app.config['MAIL_PASSWORD'].replace('\xa0', ' ').strip()
+    if app.config['MAIL_PASSWORD'] is not None:
+        app.config['MAIL_PASSWORD'] = app.config['MAIL_PASSWORD'].replace('\xa0', ' ').strip()
     app.config['MAIL_USERNAME'] = os.getenv('MAIL_USERNAME')
 
     init_mail(app)
-
 
     with app.app_context():
         db.create_all()
@@ -47,9 +49,6 @@ def create_app():
         from models.event_exceptions import EventExceptions
         from models.notifications import Notification
 
-
-
-    
     @app.route('/')
     def index():
         return render_template('login.html')
@@ -84,30 +83,50 @@ def create_app():
         from models.user import User
         if request.method == 'GET':
             return render_template('login.html')
-        if request.is_json:
-            data = request.get_json()
-            email = data.get('email')
-            password = data.get('password')
-        else:
-            email = request.form.get('email')
-            password = request.form.get('password')
-        if not email or not password:
-            return jsonify({'error': 'Missing email or password'}), 400
-        user = User.query.filter_by(email=email).first()
-        if user and user.check_password(password):
-            user.regenerate_tokens()
-            db.session.commit()
-            session['user_id'] = user.id
-            session['user_role'] = user.role
-            response = make_response()
-            response.set_cookie('session_token', user.session_token, httponly=True, secure=False, samesite='Strict', max_age=2 * 60 * 60)
+
+        try:
             if request.is_json:
-                response.set_data(json.dumps({'message': 'Login successful', 'role': user.role}))
-                response.headers['Content-Type'] = 'application/json'
-                return response
+                data = safe_get_json(request)
+                if data is None:
+                    return jsonify({'error': 'Invalid JSON'}), 400
+                email = data.get('email')
+                password = data.get('password')
             else:
-                return redirect(url_for('dashboard'))
-        return jsonify({'error': 'Invalid credentials'}), 401
+                email = request.form.get('email')
+                password = request.form.get('password')
+
+            if not email or not password:
+                return jsonify({'error': 'Missing email or password'}), 400
+
+            # Validate and sanitize email
+            validated_email = validate_email(email)
+            if not validated_email:
+                return jsonify({'error': 'Invalid credentials'}), 401
+
+            # Validate password format
+            if not validate_password(password):
+                return jsonify({'error': 'Invalid credentials'}), 401
+
+            user = User.query.filter_by(email=validated_email).first()
+            if user and user.check_password(password):
+                try:
+                    user.regenerate_tokens()
+                    db.session.commit()
+                    session['user_id'] = user.id
+                    session['user_role'] = user.role
+                    response = make_response()
+                    response.set_cookie('session_token', user.session_token, httponly=True, secure=False, samesite='Strict', max_age=2 * 60 * 60)
+                    if request.is_json:
+                        response.set_data(json.dumps({'message': 'Login successful', 'role': user.role}))
+                        response.headers['Content-Type'] = 'application/json'
+                        return response
+                    else:
+                        return redirect(url_for('dashboard'))
+                except SQLAlchemyError:
+                    return handle_db_error("login")
+            return jsonify({'error': 'Invalid credentials'}), 401
+        except Exception:
+            return jsonify({'error': 'Oops! Something went wrong.'}), 500
 
     @app.route('/logout', methods=['POST', 'GET'])
     def logout():
@@ -121,29 +140,50 @@ def create_app():
         from models.user import User
         if request.method == 'GET':
             return render_template('register.html')
-        if request.is_json:
-            data = request.get_json()
-            email = data.get('email')
-            password = data.get('password')
-            role = data.get('role')
-        else:
-            email = request.form.get('email')
-            password = request.form.get('password')
-            role = request.form.get('role')
-        if not email or not password or not role:
-            return jsonify({'error': 'Missing fields'}), 400
-        if role not in ['student', 'teacher']:
-            return jsonify({'error': 'Invalid role'}), 400
-        if User.query.filter_by(email=email).first():
-            return jsonify({'error': 'Email already exists'}), 409
-        
-        new_user = User(email=email, password=password, role=role)
-        
-        db.session.add(new_user)
-        db.session.commit()
-        response = jsonify({'message': 'User created successfully', 'role': new_user.role})
-        response.set_cookie('session_token', new_user.session_token, httponly=True, secure=False, samesite='Strict', max_age=7200)
-        return response
+
+        try:
+            if request.is_json:
+                data = safe_get_json(request)
+                if data is None:
+                    return jsonify({'error': 'Invalid JSON'}), 400
+                email = data.get('email')
+                password = data.get('password')
+                role = data.get('role')
+            else:
+                email = request.form.get('email')
+                password = request.form.get('password')
+                role = request.form.get('role')
+
+            if not email or not password or not role:
+                return jsonify({'error': 'Missing fields'}), 400
+
+            # Validate and sanitize email
+            validated_email = validate_email(email)
+            if not validated_email:
+                return jsonify({'error': 'Invalid email format'}), 400
+
+            # Validate password
+            if not validate_password(password):
+                return jsonify({'error': 'Password must be at least 8 characters'}), 400
+
+            # Validate role
+            if not validate_role(role) or role not in ['student', 'teacher']:
+                return jsonify({'error': 'Invalid role'}), 400
+
+            if User.query.filter_by(email=validated_email).first():
+                return jsonify({'error': 'Email already exists'}), 409
+
+            try:
+                new_user = User(email=validated_email, password=password, role=role)
+                db.session.add(new_user)
+                db.session.commit()
+                response = jsonify({'message': 'User created successfully', 'role': new_user.role})
+                response.set_cookie('session_token', new_user.session_token, httponly=True, secure=False, samesite='Strict', max_age=7200)
+                return response
+            except SQLAlchemyError:
+                return handle_db_error("registration")
+        except Exception:
+            return jsonify({'error': 'Oops! Something went wrong.'}), 500
 
     @app.route('/event/create', methods=['GET', 'POST'])
     def create_event():
@@ -154,97 +194,136 @@ def create_app():
         if request.method == 'GET':
             return render_template('create_event.html', user_role=user_role)
 
-        if not request.is_json:
-            return jsonify({'error': 'Content-Type must be application/json'}), 415
-        
-        data = request.get_json()
-        
-        tags = data.get('tags', '')
-        if user_role == 'student':
-            tags = ''
-        
-        event_type = data.get('event_type')
-        if event_type == 'recurring':
-            required = ['title', 'start_time', 'end_time', 'rec_start_date', 'rec_ends', 'rec_interval', 'rec_unit']
-            if not all(data.get(f) for f in required):
-                return jsonify({'error': 'Missing recurring event fields'}), 400
-            try:
-                start_date = datetime.strptime(data['rec_start_date'], "%Y-%m-%d")
-                end_date = datetime.strptime(data['rec_ends'], "%Y-%m-%d")
-                start_time = datetime.fromisoformat(data['start_time']).time()
-                end_time = datetime.fromisoformat(data['end_time']).time()
-                interval = int(data['rec_interval'])
-                unit = data['rec_unit']
-                weekdays_list = data.get('rec_weekdays', [])
-            except Exception as e:
-                return jsonify({'error': f'Invalid recurring event format: {str(e)}'}), 400
+        try:
+            if not request.is_json:
+                return jsonify({'error': 'Content-Type must be application/json'}), 415
 
-            if end_date < start_date:
-                return jsonify({'error': 'End date cannot be before the start date.'}), 400
-            
-            limit_date = start_date + relativedelta(years=2)
-            if end_date > limit_date:
-                return jsonify({'error': 'Recurring events cannot extend more than 2 years.'}), 400
+            data = safe_get_json(request)
+            if data is None:
+                return jsonify({'error': 'Invalid JSON'}), 400
 
-            recurrence_group_id = str(uuid.uuid4())
-            weekday_map = ['MO', 'TU', 'WE', 'TH', 'FR', 'SA', 'SU']
-            current = start_date
-            while current <= end_date:
-                if unit == 'weekly' and weekdays_list:
-                    current_weekday_code = weekday_map[current.weekday()]
-                    if current_weekday_code not in weekdays_list:
+            # Sanitize and validate string inputs
+            title = sanitize_string(data.get('title', ''), 200)
+            description = sanitize_string(data.get('description', ''), 2000)
+            tags = sanitize_tags(data.get('tags', ''))
+
+            if not title.strip():
+                return jsonify({'error': 'Event title is required'}), 400
+
+            if user_role == 'student':
+                tags = ''
+
+            event_type = data.get('event_type')
+            if event_type == 'recurring':
+                required = ['title', 'start_time', 'end_time', 'rec_start_date', 'rec_ends', 'rec_interval', 'rec_unit']
+                if not all(data.get(f) for f in required):
+                    return jsonify({'error': 'Missing recurring event fields'}), 400
+                try:
+                    start_date = datetime.strptime(data['rec_start_date'], "%Y-%m-%d")
+                    end_date = datetime.strptime(data['rec_ends'], "%Y-%m-%d")
+                    start_time = datetime.fromisoformat(data['start_time']).time()
+                    end_time = datetime.fromisoformat(data['end_time']).time()
+                    interval = int(data['rec_interval'])
+                    unit = data['rec_unit']
+                    weekdays_list = data.get('rec_weekdays', [])
+                except Exception as e:
+                    return jsonify({'error': f'Invalid recurring event format: {str(e)}'}), 400
+
+                if end_date < start_date:
+                    return jsonify({'error': 'End date cannot be before the start date.'}), 400
+                
+                limit_date = start_date + relativedelta(years=2)
+                if end_date > limit_date:
+                    return jsonify({'error': 'Recurring events cannot extend more than 2 years.'}), 400
+
+                recurrence_group_id = str(uuid.uuid4())
+                weekday_map = ['MO', 'TU', 'WE', 'TH', 'FR', 'SA', 'SU']
+                current = start_date
+                while current <= end_date:
+                    if unit == 'weekly' and weekdays_list:
+                        current_weekday_code = weekday_map[current.weekday()]
+                        if current_weekday_code not in weekdays_list:
+                            current += timedelta(days=1)
+                            continue
+                    start_dt = datetime.combine(current, start_time)
+                    end_dt = datetime.combine(current, end_time)
+                    # Validate priority
+                    priority = data.get('priority', 0)
+                    if not validate_priority(priority):
+                        priority = 0
+
+                    event = Event(
+                        title=title,
+                        description=description,
+                        priority=int(priority),
+                        tags=tags,
+                        start_time=start_dt,
+                        end_time=end_dt,
+                        is_recurring=True,
+                        recurrence_group_id=recurrence_group_id,
+                        creator_id=session['user_id']
+                    )
+                    db.session.add(event)
+                    if unit == 'daily':
+                        current += timedelta(days=interval)
+                    elif unit == 'weekly':
                         current += timedelta(days=1)
-                        continue
-                start_dt = datetime.combine(current, start_time)
-                end_dt = datetime.combine(current, end_time)
-                event = Event(
-                    title=data['title'],
-                    description=data.get('description', ''),
-                    priority=int(data.get('priority', 0)),
-                    tags=tags,
-                    start_time=start_dt,
-                    end_time=end_dt,
-                    is_recurring=True,
-                    recurrence_group_id=recurrence_group_id,
-                    creator_id=session['user_id']
-                )
-                db.session.add(event)
-                if unit == 'daily':
-                    current += timedelta(days=interval)
-                elif unit == 'weekly':
-                    current += timedelta(days=1)
-                elif unit == 'monthly':
-                    current += relativedelta(months=interval)
-                else:
-                    return jsonify({'error': 'Invalid recurrence unit'}), 400
-            db.session.commit()
-            return jsonify({'message': 'Recurring events created successfully'}), 200
-        else:
-            required = ['title', 'start_time', 'end_time']
-            if not all(data.get(f) for f in required):
-                return jsonify({'error': 'Missing required fields'}), 400
-            try:
-                start_dt = datetime.strptime(data['start_time'], "%Y-%m-%dT%H:%M")
-                end_dt = datetime.strptime(data['end_time'], "%Y-%m-%dT%H:%M")
-            except Exception:
-                return jsonify({'error': 'Invalid date format. Use YYYY-MM-DDTHH:MM'}), 400
+                    elif unit == 'monthly':
+                        current += relativedelta(months=interval)
+                    else:
+                        return jsonify({'error': 'Invalid recurrence unit'}), 400
 
-            if end_dt <= start_dt:
-                return jsonify({'error': 'End time must be after the start time.'}), 400
+                try:
+                    db.session.commit()
+                    return jsonify({'message': 'Recurring events created successfully'}), 200
+                except SQLAlchemyError:
+                    return handle_db_error("recurring event creation")
 
-            event = Event(
-                title=data['title'],
-                description=data.get('description', ''),
-                priority=int(data.get('priority', 0)),
-                tags=tags,
-                start_time=start_dt,
-                end_time=end_dt,
-                is_recurring=False,
-                creator_id=session['user_id']
-            )
-            db.session.add(event)
-            db.session.commit()
-            return jsonify({'message': 'Event created successfully', 'event_id': event.id}), 200
+            else:
+                required = ['title', 'start_time', 'end_time']
+                if not all(data.get(f) for f in required):
+                    return jsonify({'error': 'Missing required fields'}), 400
+
+                # Validate datetime strings
+                start_time_str = sanitize_string(data.get('start_time', ''), 50)
+                end_time_str = sanitize_string(data.get('end_time', ''), 50)
+
+                if not validate_datetime_string(start_time_str) or not validate_datetime_string(end_time_str):
+                    return jsonify({'error': 'Invalid date format. Use YYYY-MM-DDTHH:MM'}), 400
+
+                try:
+                    start_dt = datetime.strptime(start_time_str, "%Y-%m-%dT%H:%M")
+                    end_dt = datetime.strptime(end_time_str, "%Y-%m-%dT%H:%M")
+                except Exception:
+                    return jsonify({'error': 'Invalid date format. Use YYYY-MM-DDTHH:MM'}), 400
+
+                if end_dt <= start_dt:
+                    return jsonify({'error': 'End time must be after the start time.'}), 400
+
+                # Validate priority
+                priority = data.get('priority', 0)
+                if not validate_priority(priority):
+                    priority = 0
+
+                try:
+                    event = Event(
+                        title=title,
+                        description=description,
+                        priority=int(priority),
+                        tags=tags,
+                        start_time=start_dt,
+                        end_time=end_dt,
+                        is_recurring=False,
+                        creator_id=session['user_id']
+                    )
+                    db.session.add(event)
+                    db.session.commit()
+                    return jsonify({'message': 'Event created successfully', 'event_id': event.id}), 200
+                except SQLAlchemyError:
+                    return handle_db_error("event creation")
+
+        except Exception:
+            return jsonify({'error': 'Oops! Something went wrong.'}), 500
 
     @app.route('/event/edit/<int:event_id>', methods=['GET'])
     def edit_event_page(event_id):
@@ -309,101 +388,99 @@ def create_app():
             })
 
         if request.method == 'POST':
-            data = request.get_json()
-            if not data:
-                return jsonify({'error': 'Invalid JSON'}), 400
+            try:
+                data = safe_get_json(request)
+                if not data:
+                    return jsonify({'error': 'Invalid JSON'}), 400
 
-            if event.is_recurring and 'edit_scope' in data:
-                edit_scope = data.get('edit_scope')
-                
-                try:
-                    new_start = datetime.fromisoformat(data['start_time'])
-                    new_end = datetime.fromisoformat(data['end_time'])
-                    
-                    # For 'all' or 'future' scopes, only allow time changes, not date changes
-                    if edit_scope in ['all', 'future']:
-                        if new_start.date() != event.start_time.date() or new_end.date() != event.end_time.date():
-                            return jsonify({'error': 'For recurring events, you can only change the time, not the date.'}), 400
-                    
-                    if edit_scope == 'this':
-                        # For 'this' scope, we allow date changes as it becomes an exception
-                        original_date = datetime.strptime(data['original_date'], '%Y-%m-%d').date()
-                        existing_exception = EventExceptions.query.filter_by(original_event_id=event.id, exception_date=original_date).first()
-                        
-                        if existing_exception:
-                            exception = existing_exception
-                        else:
-                            exception = EventExceptions(original_event_id=event.id, exception_date=original_date)
-                            db.session.add(exception)
-                        
-                        exception.title = data.get('title')
-                        exception.description = data.get('description')
-                        exception.priority = int(data.get('priority', 0))
-                        if user.role in ['teacher', 'admin']:
-                            exception.tags = data.get('tags', '')
-                        exception.start_time = new_start
-                        exception.end_time = new_end
-                        
-                        db.session.commit()
-                        return jsonify({'message': 'This occurrence was updated successfully!'})
-                    
-                    else: # 'all' or 'future'
-                        events_to_update_query = Event.query.filter_by(recurrence_group_id=event.recurrence_group_id)
-                        if edit_scope == 'future':
+                # Sanitize string inputs
+                if 'title' in data:
+                    data['title'] = sanitize_string(data['title'], 200)
+                if 'description' in data:
+                    data['description'] = sanitize_string(data['description'], 2000)
+                if 'tags' in data:
+                    data['tags'] = sanitize_tags(data['tags'])
+                if 'priority' in data and not validate_priority(data['priority']):
+                    data['priority'] = 0
+
+                if event.is_recurring and 'edit_scope' in data:
+                    edit_scope = data.get('edit_scope')
+
+                    try:
+                        new_start = datetime.fromisoformat(data['start_time'])
+                        new_end = datetime.fromisoformat(data['end_time'])
+
+                        # For 'all' or 'future' scopes, only allow time changes, not date changes
+                        if edit_scope in ['all', 'future']:
+                            if new_start.date() != event.start_time.date() or new_end.date() != event.end_time.date():
+                                return jsonify({'error': 'For recurring events, you can only change the time, not the date.'}), 400
+
+                        if edit_scope == 'this':
+                            # For 'this' scope, we allow date changes as it becomes an exception
                             original_date = datetime.strptime(data['original_date'], '%Y-%m-%d').date()
-                            events_to_update_query = events_to_update_query.filter(Event.start_time >= datetime.combine(original_date, datetime.min.time()))
-                        
-                        # Store the original times before updating
-                        original_start = event.start_time
-                        original_end = event.end_time
-                        
-                        # Calculate the time difference between old and new times
-                        # We only care about time difference, not date difference
-                        time_delta = timedelta(
-                            hours=new_start.hour - original_start.hour,
-                            minutes=new_start.minute - original_start.minute,
-                            seconds=new_start.second - original_start.second
-                        )
-                        
-                        end_time_delta = timedelta(
-                            hours=new_end.hour - original_end.hour,
-                            minutes=new_end.minute - original_end.minute,
-                            seconds=new_end.second - original_end.second
-                        )
-                        
-                        for e in events_to_update_query.all():
-                            e.title = data.get('title')
-                            e.description = data.get('description')
-                            e.priority = int(data.get('priority', 0))
+                            existing_exception = EventExceptions.query.filter_by(original_event_id=event.id, exception_date=original_date).first()
+                            
+                            if existing_exception:
+                                exception = existing_exception
+                            else:
+                                exception = EventExceptions(original_event_id=event.id, exception_date=original_date)
+                                db.session.add(exception)
+                            
+                            exception.title = data.get('title')
+                            exception.description = data.get('description')
+                            exception.priority = int(data.get('priority', 0))
                             if user.role in ['teacher', 'admin']:
-                                e.tags = data.get('tags', '')
+                                exception.tags = data.get('tags', '')
+                            exception.start_time = new_start
+                            exception.end_time = new_end
                             
-                            # Apply the time shifts to each event (keeping the same date)
-                            new_start_time = datetime.combine(e.start_time.date(), datetime.min.time()) + time_delta
-                            new_end_time = datetime.combine(e.end_time.date(), datetime.min.time()) + end_time_delta
+                            db.session.commit()
+                            return jsonify({'message': 'This occurrence was updated successfully!'})
+                    
+                        else: # 'all' or 'future'
+                            events_to_update_query = Event.query.filter_by(recurrence_group_id=event.recurrence_group_id)
+                            if edit_scope == 'future':
+                                original_date = datetime.strptime(data['original_date'], '%Y-%m-%d').date()
+                                events_to_update_query = events_to_update_query.filter(Event.start_time >= datetime.combine(original_date, datetime.min.time()))
                             
-                            e.start_time = new_start_time
-                            e.end_time = new_end_time
-                        
-                        db.session.commit()
-                        return jsonify({'message': 'The event series was updated successfully!'})
-                except (KeyError, ValueError) as e:
-                    return jsonify({'error': f'Invalid or missing date format: {str(e)}'}), 400
-            else:
-                event.title = data.get('title', event.title)
-                event.description = data.get('description', event.description)
-                event.priority = int(data.get('priority', event.priority))
-                if user.role in ['teacher', 'admin']:
-                    event.tags = data.get('tags', event.tags)
-                try:
-                    event.start_time = datetime.fromisoformat(data['start_time'])
-                    event.end_time = datetime.fromisoformat(data['end_time'])
-                except (KeyError, ValueError):
-                    return jsonify({'error': 'Invalid or missing date format'}), 400
-                if event.end_time <= event.start_time:
-                    return jsonify({'error': 'End time must be after the start time.'}), 400
-                db.session.commit()
-                return jsonify({'message': 'Event updated successfully!'})
+                            # Store the original times before updating
+                            original_start = event.start_time
+                            original_end = event.end_time
+                            
+                            # Calculate the time difference between old and new times
+                            # We only care about time difference, not date difference
+                            time_delta = timedelta(
+                                hours=new_start.hour - original_start.hour,
+                                minutes=new_start.minute - original_start.minute,
+                                seconds=new_start.second - original_start.second
+                            )
+                            
+                            end_time_delta = timedelta(
+                                hours=new_end.hour - original_end.hour,
+                                minutes=new_end.minute - original_end.minute,
+                                seconds=new_end.second - original_end.second
+                            )
+                            
+                            for e in events_to_update_query.all():
+                                e.title = data.get('title')
+                                e.description = data.get('description')
+                                e.priority = int(data.get('priority', 0))
+                                if user.role in ['teacher', 'admin']:
+                                    e.tags = data.get('tags', '')
+                                
+                                # Apply the time shifts to each event (keeping the same date)
+                                new_start_time = datetime.combine(e.start_time.date(), datetime.min.time()) + time_delta
+                                new_end_time = datetime.combine(e.end_time.date(), datetime.min.time()) + end_time_delta
+                                
+                                e.start_time = new_start_time
+                                e.end_time = new_end_time
+                            
+                            db.session.commit()
+                            return jsonify({'message': 'The event series was updated successfully!'})
+                    except (KeyError, ValueError) as e:
+                        return jsonify({'error': f'Invalid or missing date format: {str(e)}'}), 400
+            except Exception:
+                return jsonify({'error': 'Oops! Something went wrong.'}), 500
 
         if request.method == 'DELETE':
             scope = request.args.get('scope', 'single')
@@ -458,9 +535,12 @@ def create_app():
                 return jsonify({'message': 'This occurrence of the event was deleted.'})
             
             else:
-                db.session.delete(event)
-                db.session.commit()
-                return jsonify({'message': 'Event deleted successfully.'})
+                try:
+                    db.session.delete(event)
+                    db.session.commit()
+                    return jsonify({'message': 'Event deleted successfully.'})
+                except SQLAlchemyError:
+                    return handle_db_error("event deletion")
 
     @app.route('/api/event/<int:event_id>/toggle-notifications', methods=['POST'])
     def toggle_event_notifications(event_id):
@@ -611,7 +691,6 @@ def create_app():
 
         return jsonify(final_events)
 
-
     @app.route('/profile/info')
     def profile_info():
         if 'user_id' not in session:
@@ -644,69 +723,79 @@ def create_app():
     @app.route('/api/profile/tags', methods=['POST'])
     def update_profile_tags():
         from models.user import User
-        
+
         if 'user_id' not in session:
             return jsonify({'error': 'Unauthorised'}), 401
 
-        user = db.session.get(User, session['user_id'])
-        if not user:
-            return jsonify({'error': 'User not found'}), 401
+        try:
+            user = db.session.get(User, session['user_id'])
+            if not user:
+                return jsonify({'error': 'User not found'}), 401
 
-        data = request.get_json()
-        if data is None:
-            return jsonify({'error': 'Invalid JSON'}), 400
-            
-        new_tags = data.get('tags', '')
-        user.profile_tags = new_tags
-        db.session.commit()
+            data = safe_get_json(request)
+            if data is None:
+                return jsonify({'error': 'Invalid JSON'}), 400
 
-        return jsonify({'message': 'Your tags have been updated successfully!'}), 200
+            # Validate and sanitize tags
+            new_tags = sanitize_tags(data.get('tags', ''))
 
+            try:
+                user.profile_tags = new_tags
+                db.session.commit()
+                return jsonify({'message': 'Your tags have been updated successfully!'}), 200
+            except SQLAlchemyError:
+                return handle_db_error("profile tags update")
+
+        except Exception:
+            return jsonify({'error': 'Oops! Something went wrong.'}), 500
 
     @app.route('/api/summarise', methods=['POST'])
     def summarise_event():
-        data = request.json
-        event_description = data.get('description', '')
-        start_time = data.get('start_time', '')
-        end_time = data.get('end_time', '')
-        title = data.get('title', '')
-
-        # Extract "items to bring" if mentioned (basic heuristic)
-        items_to_bring = []
-        description_lines = event_description.splitlines()
-        for line in description_lines:
-            if 'bring' in line.lower():
-                parts = line.lower().split('bring', 1)[1].strip()
-                items_to_bring = [item.strip() for item in parts.split(',') if item.strip()]
-                break
-
-        prompt_text = f"""
-        Please summarise the following event, formatting your response using markdown. 
-        Use bold headings for the Title and Time and Date sections. 
-        List the items to bring as bullet points under an 'Items to bring' heading.
-
-        **Title:** {title}
-
-        **Time and Date:**  
-        Start: {start_time}  
-        End: {end_time}
-
-        **Description:**  
-        {event_description}
-
-        """
-
-        if items_to_bring:
-            prompt_text += "**Items to bring:**\n"
-            for item in items_to_bring:
-                prompt_text += f"- {item}\n"
-        else:
-            prompt_text += "**Items to bring:** None specified\n"
-
-        SERVICE_ACCOUNT_FILE = 'secrets/gemkey.json'
-        SCOPES = ['https://www.googleapis.com/auth/generative-language']
-
         try:
+            data = safe_get_json(request)
+            if data is None:
+                return jsonify({'error': 'Invalid JSON data'}), 400
+
+            # Validate and sanitize input data
+            event_description = sanitize_string(data.get('description', ''), 2000)
+            start_time = sanitize_string(data.get('start_time', ''), 50)
+            end_time = sanitize_string(data.get('end_time', ''), 50)
+            title = sanitize_string(data.get('title', ''), 200)
+
+            # Extract "items to bring" if mentioned (basic heuristic)
+            items_to_bring = []
+            description_lines = event_description.splitlines()
+            for line in description_lines:
+                if 'bring' in line.lower():
+                    parts = line.lower().split('bring', 1)[1].strip()
+                    items_to_bring = [item.strip() for item in parts.split(',') if item.strip()]
+                    break
+
+            prompt_text = f"""
+            Please summarise the following event, formatting your response using markdown.
+            Use bold headings for the Title and Time and Date sections.
+            List the items to bring as bullet points under an 'Items to bring' heading.
+
+            **Title:** {title}
+
+            **Time and Date:**
+            Start: {start_time}
+            End: {end_time}
+
+            **Description:**
+            {event_description}
+
+            """
+
+            if items_to_bring:
+                prompt_text += "**Items to bring:**\n"
+                for item in items_to_bring:
+                    prompt_text += f"- {item}\n"
+            else:
+                prompt_text += "**Items to bring:** None specified\n"
+
+            SERVICE_ACCOUNT_FILE = 'secrets/gemkey.json'
+            SCOPES = ['https://www.googleapis.com/auth/generative-language']
             # Get bearer token from service account
             credentials = service_account.Credentials.from_service_account_file(
                 SERVICE_ACCOUNT_FILE, scopes=SCOPES)
@@ -739,13 +828,10 @@ def create_app():
                 summary = candidates[0]["content"]["parts"][0]["text"] if candidates else "No summary available."
                 return jsonify({'summary': summary})
             else:
-                print(f"Error: {response.status_code}, Response: {response.text}")
-                return jsonify({'error': 'Failed to get summary'}), response.status_code
+                return jsonify({'error': 'Oops! Something went wrong.'}), 500
 
-        except Exception as e:
-            print(f"Exception occurred: {e}")
-            return jsonify({'error': 'Internal server error'}), 500
-        
+        except Exception:
+            return jsonify({'error': 'Oops! Something went wrong.'}), 500
 
     @app.route('/notifications', methods=['GET'])
     def notifications():
@@ -834,36 +920,58 @@ def create_app():
 
         return jsonify(user_events)
 
-
     @app.route('/profile/change-password', methods=['POST'])
     def change_password():
+        from models.user import User
+
         if 'user_id' not in session:
             flash("You must be logged in to change your password.", "error")
             return redirect(url_for('login'))
 
-        user = User.query.get(session['user_id'])
+        try:
+            user = db.session.get(User, session['user_id'])
+            if not user:
+                flash("User not found.", "error")
+                return redirect(url_for('login'))
 
-        current_password = request.form.get('current_password')
-        new_password = request.form.get('new_password')
-        confirm_password = request.form.get('confirm_password')
+            current_password = request.form.get('current_password')
+            new_password = request.form.get('new_password')
+            confirm_password = request.form.get('confirm_password')
 
-        if not user.check_password(current_password):
-            flash("Current password is incorrect.", "error")
+            # Validate required fields
+            if not current_password or not new_password or not confirm_password:
+                flash("All password fields are required.", "error")
+                return redirect(url_for('profile_privacy'))
+
+            # Validate password formats
+            if not validate_password(current_password) or not validate_password(new_password):
+                flash("Invalid password format.", "error")
+                return redirect(url_for('profile_privacy'))
+
+            if not user.check_password(current_password):
+                flash("Current password is incorrect.", "error")
+                return redirect(url_for('profile_privacy'))
+
+            if new_password != confirm_password:
+                flash("New passwords do not match.", "error")
+                return redirect(url_for('profile_privacy'))
+
+            if len(new_password) < 8:
+                flash("New password must be at least 8 characters.", "error")
+                return redirect(url_for('profile_privacy'))
+
+            try:
+                user.set_password(new_password)
+                db.session.commit()
+                flash("Password successfully changed.", "success")
+                return redirect(url_for('profile_privacy'))
+            except SQLAlchemyError:
+                flash("Oops! Something went wrong.", "error")
+                return redirect(url_for('profile_privacy'))
+
+        except Exception:
+            flash("Oops! Something went wrong.", "error")
             return redirect(url_for('profile_privacy'))
-
-        if new_password != confirm_password:
-            flash("New passwords do not match.", "error")
-            return redirect(url_for('profile_privacy'))
-
-        if len(new_password) < 8:
-            flash("New password must be at least 8 characters.", "error")
-            return redirect(url_for('profile_privacy'))
-
-        user.set_password(new_password)
-        db.session.commit()
-
-        flash("Password successfully changed.", "success")
-        return redirect(url_for('profile_privacy'))
 
     return app
 
