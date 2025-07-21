@@ -53,13 +53,15 @@ def create_app():
     # Initialize Flask-Mail extension
     init_mail(app)
 
-    # Create database tables and import models within app context
+    # Import models BEFORE creating tables
+    from models.event import Event
+    from models.user import User
+    from models.event_exceptions import EventExceptions
+    from models.notifications import Notification
+
+    # Create database tables within app context
     with app.app_context():
         db.create_all()
-        from models.event import Event
-        from models.user import User
-        from models.event_exceptions import EventExceptions
-        from models.notifications import Notification
 
     # Route definitions start here
     @app.route('/')
